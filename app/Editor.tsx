@@ -13,7 +13,7 @@ export function Editor() {
       liveblocks,
       StarterKit.configure({
         history: false,
-      }),
+      } as any),
     ],
     immediatelyRender: false,
   });
