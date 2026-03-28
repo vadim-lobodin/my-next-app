@@ -1,45 +1,26 @@
 "use client"
 
 import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Icon } from "./icon"
 import { Typography } from "./typography"
 
-// ===== FIGMA: Workflow Step =====
-// States: done (positive), in-progress (info), todo (inline/neutral)
-// Layout: [status icon] [title + optional hint] [spacer] [agent tag]
-// Figma: rounded 8px, padding 12px, gap 8px between icon and text
+// ===== Workflow Step =====
+// Timeline-style step with status icon and connecting line.
+// States: done (positive), in-progress (info), todo (neutral)
 
 export type WorkflowStepStatus = "done" | "in-progress" | "todo"
 
 export interface WorkflowStepProps {
   title: string
+  /** Secondary text displayed on the right (e.g. file name) */
   hint?: string
   status?: WorkflowStepStatus
-  /** Agent name displayed in tag on the right */
-  agent?: string
-  /** Fleet icon name for the agent (e.g. "codex", "claude-code") */
-  agentIcon?: string
+  /** Whether this is the last step (hides the connecting line below) */
+  isLast?: boolean
   className?: string
   onClick?: () => void
 }
-
-const stepVariants = cva(
-  "flex items-start justify-between p-3 rounded-lg w-full border transition-[filter] duration-150 hover:brightness-[1.15]",
-  {
-    variants: {
-      status: {
-        done: "",
-        "in-progress": "",
-        todo: "",
-      },
-    },
-    defaultVariants: {
-      status: "todo",
-    },
-  }
-)
 
 const statusConfig: Record<WorkflowStepStatus, { icon: string; animate?: boolean }> = {
   done: { icon: "task-completed" },
@@ -47,79 +28,55 @@ const statusConfig: Record<WorkflowStepStatus, { icon: string; animate?: boolean
   todo: { icon: "run" },
 }
 
-const statusStyles: Record<WorkflowStepStatus, { background: string; border: string }> = {
-  done: {
-    background: "var(--fleet-banner-background-positive)",
-    border: "var(--fleet-banner-border-positive)",
-  },
-  "in-progress": {
-    background: "var(--fleet-banner-background-info)",
-    border: "var(--fleet-banner-border-info)",
-  },
-  todo: {
-    background: "var(--fleet-banner-inline-background, rgba(255,255,255,0.09))",
-    border: "var(--fleet-border-disabled, rgba(255,255,255,0.11))",
-  },
+const lineColors: Record<WorkflowStepStatus, string> = {
+  done: "var(--fleet-banner-border-positive, #255a44)",
+  "in-progress": "var(--fleet-banner-border-info, #225090)",
+  todo: "var(--fleet-border-disabled, rgba(255,255,255,0.11))",
 }
 
 export const WorkflowStep = React.forwardRef<HTMLDivElement, WorkflowStepProps>(
-  ({ title, hint, status = "todo", agent, agentIcon, className, onClick }, ref) => {
+  ({ title, hint, status = "todo", isLast = false, className, onClick }, ref) => {
     const config = statusConfig[status]
-    const styles = statusStyles[status]
+    const lineColor = lineColors[status]
 
     return (
       <div
         ref={ref}
         className={cn(
-          stepVariants({ status }),
+          "flex gap-3 min-h-[36px]",
           onClick && "cursor-pointer",
           className,
         )}
-        style={{
-          background: styles.background,
-          borderColor: styles.border,
-        }}
         onClick={onClick}
       >
-        {/* Left: icon + title + hint */}
-        <div className="flex flex-1 gap-2 items-start min-w-0">
-          <div className="flex items-center pt-0.5 shrink-0">
-            <Icon
-              fleet={config.icon}
-              size="sm"
-              className={config.animate ? "animate-spin" : ""}
+        {/* Timeline column: dot + line */}
+        <div className="flex flex-col items-center w-4 shrink-0">
+          {/* Status icon */}
+          <Icon
+            fleet={config.icon}
+            size="sm"
+            className={cn("shrink-0", config.animate && "animate-spin")}
+          />
+          {/* Connecting line */}
+          {!isLast && (
+            <div
+              className="flex-1 w-px min-h-[12px]"
+              style={{ background: lineColor }}
             />
-          </div>
-          <div className="flex flex-1 gap-2 items-center min-w-0 flex-wrap">
-            <Typography variant="header-3-semibold" className="shrink-0">
-              {title}
-            </Typography>
-            {hint && (
-              <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>
-                {hint}
-              </Typography>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Right: agent tag */}
-        {agent && (
-          <div className="flex items-start shrink-0 ml-2">
-            <div
-              className="flex gap-[var(--fleet-tag-horizontal-gap,2px)] items-center px-1 py-px rounded-[var(--fleet-tag-corner-radius,4px)]"
-              style={{
-                border: "1px solid var(--fleet-tag-default-border)",
-              }}
-            >
-              {agentIcon && (
-                <Icon fleet={agentIcon} size="sm" />
-              )}
-              <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>
-                {agent}
-              </Typography>
-            </div>
-          </div>
-        )}
+        {/* Content */}
+        <div className="flex flex-col flex-1 min-w-0 pb-3">
+          <Typography variant="default-semibold">
+            {title}
+          </Typography>
+          {hint && (
+            <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>
+              {hint}
+            </Typography>
+          )}
+        </div>
       </div>
     )
   }

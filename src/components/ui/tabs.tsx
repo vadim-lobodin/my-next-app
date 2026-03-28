@@ -152,10 +152,11 @@ const TabsTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       fleetTabsTriggerVariants({ variant, size, state }),
-      // Use Air CSS variables for states handled by Radix
-      "data-[state=active]:bg-[var(--fleet-tab-background-selected)]",
-      "data-[state=active]:border-[var(--fleet-tab-border-selected)]",
-      "data-[state=active]:text-[var(--fleet-tab-text-selected)]",
+      // Use Air CSS variables for states handled by Radix — focused blue style for active tabs
+      "data-[state=active]:bg-[var(--fleet-tab-background-selectedFocused)]",
+      "data-[state=active]:border-[var(--fleet-tab-border-selectedFocused)]",
+      "data-[state=active]:text-[var(--fleet-tab-text-selectedFocused)]",
+      "data-[state=active]:font-semibold",
       "data-[state=inactive]:bg-[var(--fleet-tab-background-default)]",
       "data-[state=inactive]:border-[var(--fleet-tab-border-default)]",
       "data-[state=inactive]:text-[var(--fleet-tab-text-default)]",

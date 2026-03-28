@@ -1,5 +1,4 @@
 // Export all Air components
-export { ScrollArea, ScrollBar } from "./scroll-area"
 export { Button, buttonVariants } from "./button-shadcn"
 export { Typography, typographyVariants } from "./typography"
 export * from "./icon"
@@ -361,6 +360,12 @@ export {
   type BannerButton,
   type BannerLink,
 } from "./banner"
+
+// Air App Toolbar - Simplified toolbar for web app layouts (no traffic lights, no panel toggle)
+export {
+  AppToolbar,
+  type AppToolbarProps,
+} from "./app-toolbar"
 
 // Air Workflow Step - Workflow step card with done/in-progress/todo states
 export {
