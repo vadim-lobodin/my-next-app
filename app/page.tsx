@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { Panel as ResizablePanel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import {
-  WebAppLayout,
   Navigation,
   NavigationItem,
   useNavigationExpanded,
@@ -18,9 +18,12 @@ import {
   TabsContent,
   WorkflowStep,
   ScrollArea,
+  Button,
+  AppToolbar,
 } from "@/components/ui"
 import { Room } from "./Room"
 import { Editor } from "./Editor"
+import { Avatars } from "./Avatars"
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
 
@@ -70,23 +73,20 @@ function NavContent() {
 
 function WorkflowStepsSidebar() {
   return (
-    <div className="flex flex-col h-full p-2 gap-3">
-      <Typography variant="header-2-semibold">
+    <div className="flex flex-col h-full p-4 gap-3">
+      <Typography variant="header-3-semibold">
         Workflow steps
       </Typography>
       <ScrollArea className="flex-1">
         <div className="flex flex-col">
           <WorkflowStep title="Feature Workflow" hint="plan.md" status="done" />
-          <WorkflowStep title="Requirements" status="in-progress" />
-          <WorkflowStep title="Technical Specification" status="todo" />
+          <WorkflowStep title="Requirements" hint="requirements.md" status="in-progress" />
+          <WorkflowStep title="Technical Specification" hint="spec.md" status="todo" />
           <WorkflowStep title="Build" status="todo" />
           <WorkflowStep title="Review" status="todo" isLast />
-          <div className="flex items-center gap-1 cursor-pointer py-1">
-            <Icon fleet="add" size="sm" style={{ color: "var(--fleet-text-secondary)" }} />
-            <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>
-              Add step
-            </Typography>
-          </div>
+          <Button variant="ghost" size="default" iconLeft="add" className="w-fit min-w-0">
+            Add step
+          </Button>
         </div>
       </ScrollArea>
     </div>
@@ -108,9 +108,7 @@ function RightPanel() {
         </TabBar>
         <TabContentArea>
           <TabsContent value="plan" className="mt-0 h-full">
-            <Room>
-              <Editor />
-            </Room>
+            <Editor />
           </TabsContent>
           <TabsContent value="requirements" className="mt-0 h-full" />
           <TabsContent value="tech-spec" className="mt-0 h-full" />
@@ -158,6 +156,7 @@ const chatMessages = [
 
 export default function Home() {
   return (
+    <Room>
     <div
       className="h-screen flex"
       style={{
@@ -168,32 +167,51 @@ export default function Home() {
         ["--second-level-navigation-width" as string]: "232px",
       }}
     >
-      <Navigation alwaysExpanded>
+      <Navigation>
         <NavContent />
       </Navigation>
-      <WebAppLayout withNavigation expanded>
-        {/* Left: workflow steps */}
-        <WebAppLayout.Sidebar width={320}>
-          <div className="h-full -m-[var(--layout-padding)]">
-            <WorkflowStepsSidebar />
-          </div>
-        </WebAppLayout.Sidebar>
+      <div
+        className="flex-1 ml-[var(--nav-width-collapsed)] flex flex-col bg-[var(--fleet-background-primary)]"
+        style={{ height: "100vh" }}
+      >
+        <AppToolbar
+          projectName="jcp-spring-petclinic"
+          branchName="air/feature-workflow-2546"
+          taskName="Feature Workflow: Races Timeline Page"
+          rightExtra={
+            <div className="flex items-center gap-3">
+              <Avatars />
+              <Button variant="primary" size="default">Share</Button>
+            </div>
+          }
+        />
+        <PanelGroup direction="horizontal" className="flex-1 min-h-0 pr-[var(--layout-gap)] pb-[var(--layout-gap)]">
+          {/* Left: workflow steps */}
+          <ResizablePanel defaultSize={18} minSize={12} maxSize={25}>
+            <div className="h-full rounded-[var(--fleet-radius-lg)] bg-[var(--fleet-island-background)] overflow-hidden">
+              <WorkflowStepsSidebar />
+            </div>
+          </ResizablePanel>
 
-        {/* Center: conversation */}
-        <WebAppLayout.Island main isEmpty className="!bg-[var(--fleet-island-background)] !p-0">
-          <ChatIsland
-            className="h-full [&>div:last-child]:pb-0"
-            messages={chatMessages}
-          />
-        </WebAppLayout.Island>
+          <PanelResizeHandle className="w-2" />
 
-        {/* Right: plan panel */}
-        <WebAppLayout.Sidebar width={480}>
-          <div className="h-full -m-[var(--layout-padding)] min-w-0 overflow-hidden">
+          {/* Center: conversation */}
+          <ResizablePanel defaultSize={35} minSize={25}>
+            <ChatIsland
+              className="h-full [&>div:last-child]:pb-0"
+              messages={chatMessages}
+            />
+          </ResizablePanel>
+
+          <PanelResizeHandle className="w-2" />
+
+          {/* Right: plan panel */}
+          <ResizablePanel defaultSize={47} minSize={25} maxSize={60}>
             <RightPanel />
-          </div>
-        </WebAppLayout.Sidebar>
-      </WebAppLayout>
+          </ResizablePanel>
+        </PanelGroup>
+      </div>
     </div>
+    </Room>
   )
 }

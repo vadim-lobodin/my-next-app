@@ -1,4 +1,5 @@
 // Export all Air components
+export { ScrollArea, ScrollBar } from "./scroll-area"
 export { Button, buttonVariants } from "./button-shadcn"
 export { Typography, typographyVariants } from "./typography"
 export * from "./icon"

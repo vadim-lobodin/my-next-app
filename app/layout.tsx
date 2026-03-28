@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@liveblocks/react-ui/styles.css";
+import "@liveblocks/react-ui/styles/dark/attributes.css";
 import "@liveblocks/react-tiptap/styles.css";
 import "@/styles/globals.css";
 import Providers from "./providers";
@@ -15,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full dark" data-theme="dark">
       <body className="h-full">
         <Providers>{children}</Providers>
       </body>
