@@ -1,16 +1,8 @@
-/* Hide Liveblocks badge */
+/* Hide Liveblocks badge (not portals used by comments) */
 iframe[title*="Liveblocks"],
-div[data-liveblocks-portal],
-a[href*="liveblocks.io"],
-div[style*="liveblocks"],
-body > div[style*="position: fixed"][style*="bottom"],
-body > div[style*="z-index: 9999"],
-body > div[style*="z-index: 2147483647"] {
+a[href*="liveblocks.io/powered-by"] {
   display: none !important;
   visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  position: absolute !important;
   width: 0 !important;
   height: 0 !important;
   overflow: hidden !important;
@@ -19,9 +11,16 @@ body > div[style*="z-index: 2147483647"] {
 /* Liveblocks UI font override */
 .lb-root,
 .lb-tiptap-toolbar,
-.lb-tiptap-floating-toolbar,
-.tiptap {
+.lb-tiptap-floating-toolbar {
   font-family: var(--fleet-font-family, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
+}
+.tiptap > *:not(.lb-root):not([class*="lb-"]):not([class*="collaboration"]) {
+  font-family: var(--fleet-font-family, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
+  font-size: 13px !important;
+  color: var(--fleet-text-primary) !important;
+}
+.tiptap p,
+.tiptap li {
   font-size: 13px !important;
   color: var(--fleet-text-primary) !important;
 }

@@ -1,28 +1,45 @@
 "use client";
 
-import { useLiveblocksExtension, FloatingToolbar, Toolbar } from "@liveblocks/react-tiptap";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { Suspense } from "react";
+import {
+  useLiveblocksExtension,
+  FloatingComposer,
+  FloatingThreads,
+  Toolbar,
+} from "@liveblocks/react-tiptap";
+import { useEditor, EditorContent, Editor as TEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Threads } from "./Threads";
+import { useThreads } from "@liveblocks/react/suspense";
+
+function Threads({ editor }: { editor: TEditor | null }) {
+  const { threads } = useThreads();
+  if (!threads || !editor) return null;
+  return <FloatingThreads threads={threads} editor={editor} />;
+}
 
 export function Editor() {
   const liveblocks = useLiveblocksExtension();
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       liveblocks,
       StarterKit.configure({
-        history: false,
-      } as any),
+        undoRedo: false,
+      }),
     ],
-    immediatelyRender: false,
   });
 
   return (
-    <div className="h-full flex flex-col" style={{ color: "var(--fleet-text-primary)" }}>
+    <div className="h-full flex flex-col" style={{ color: "var(--fleet-text-primary)", position: "relative" }}>
       <Toolbar editor={editor} />
-      <EditorContent editor={editor} className="editor flex-1 overflow-y-auto p-4" />
-      <Threads editor={editor} />
+      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <EditorContent editor={editor} className="editor" />
+      </div>
+      <FloatingComposer editor={editor} style={{ width: 350 }} />
+      <Suspense fallback={null}>
+        <Threads editor={editor} />
+      </Suspense>
     </div>
   );
 }
