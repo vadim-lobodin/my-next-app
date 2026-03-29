@@ -26,3 +26,8 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Hide Liveblocks badge */
+[data-liveblocks-portal] > div[style*="position: fixed"] {
+  display: none !important;
+}
