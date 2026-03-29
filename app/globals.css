@@ -30,7 +30,11 @@ body {
 /* Hide Liveblocks badge */
 iframe[title*="Liveblocks"],
 div[data-liveblocks-portal],
-a[href*="liveblocks.io"] {
+a[href*="liveblocks.io"],
+div[style*="liveblocks"],
+body > div[style*="position: fixed"][style*="bottom"],
+body > div[style*="z-index: 9999"],
+body > div[style*="z-index: 2147483647"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
