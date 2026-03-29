@@ -84,7 +84,7 @@ function WorkflowStepsSidebar({ activeStep, onStepClick }: WorkflowStepsSidebarP
   const steps: { id: StepId; title: string; hint?: string; status: "done" | "in-progress" | "todo"; isLast?: boolean }[] = [
     { id: "feature-workflow", title: "Feature Workflow", hint: "plan.md", status: "done" },
     { id: "requirements", title: "Requirements", hint: "requirements.md", status: "in-progress" },
-    { id: "tech-spec", title: "Technical Specification", hint: "spec.md", status: "todo" },
+    { id: "tech-spec", title: "Technical Specification", status: "todo" },
     { id: "build", title: "Build", status: "todo" },
     { id: "review", title: "Review", status: "todo", isLast: true },
   ]
@@ -104,10 +104,8 @@ function WorkflowStepsSidebar({ activeStep, onStepClick }: WorkflowStepsSidebarP
               status={step.status}
               isLast={step.isLast}
               onClick={() => onStepClick(step.id)}
-              className={activeStep === step.id
-                ? "bg-[var(--fleet-listItem-background-focused)] rounded-[4px] pl-1 pr-2 py-2 cursor-pointer"
-                : "cursor-pointer pl-1 pr-2 py-2 rounded-[4px] hover:bg-[var(--fleet-listItem-background-hovered)]"
-              }
+              isActive={activeStep === step.id}
+              className="pl-1 pr-2 py-2"
             />
           ))}
         </div>
@@ -222,24 +220,9 @@ const stepMessages: Record<StepId, { id: string; role: "user" | "assistant"; con
       ),
     },
   ],
-  "tech-spec": [
-    { id: "ts-1", role: "user", content: "Create the technical specification based on the requirements." },
-    {
-      id: "ts-2",
-      role: "assistant",
-      content: (
-        <Typography variant="default-chat" as="div" className="flex flex-col gap-3">
-          <p>Working on the technical specification. I'll review the existing codebase architecture and identify reusable components...</p>
-        </Typography>
-      ),
-    },
-  ],
-  "build": [
-    { id: "b-1", role: "assistant", content: "Waiting for the Technical Specification step to complete before starting the build." },
-  ],
-  "review": [
-    { id: "r-1", role: "assistant", content: "The review step will begin once the build is complete." },
-  ],
+  "tech-spec": [],
+  "build": [],
+  "review": [],
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -289,11 +272,17 @@ export default function Home() {
 
           {/* Center: conversation — changes per selected step */}
           <ResizablePanel defaultSize={35} minSize={25}>
-            <ChatIsland
-              key={activeStep}
-              className="h-full [&>div:last-child]:pb-0"
-              messages={stepMessages[activeStep]}
-            />
+            {stepMessages[activeStep].length > 0 ? (
+              <ChatIsland
+                key={activeStep}
+                className="h-full [&>div:last-child]:pb-0"
+                messages={stepMessages[activeStep]}
+              />
+            ) : (
+              <div className="h-full rounded-[var(--fleet-radius-lg)] bg-[var(--fleet-island-background)] flex items-center justify-center">
+                <WaitingState stepName="previous step" />
+              </div>
+            )}
           </ResizablePanel>
 
           <PanelResizeHandle className="w-2" />
