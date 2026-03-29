@@ -77,9 +77,18 @@ div.ProseMirror li > p {
 }
 
 /* Tiptap headings — match Air typography */
-.tiptap h1, .tiptap h1 * { font-size: 26px !important; font-weight: 600 !important; line-height: 32px !important; }
-.tiptap h2, .tiptap h2 * { font-size: 23px !important; font-weight: 600 !important; line-height: 28px !important; }
-.tiptap h3, .tiptap h3 * { font-size: 19px !important; font-weight: 600 !important; line-height: 24px !important; }
-.tiptap h4, .tiptap h4 * { font-size: 15px !important; font-weight: 600 !important; line-height: 20px !important; }
+.tiptap h1, .tiptap h1 *:not([class*="collaboration"]) { font-size: 26px !important; font-weight: 600 !important; line-height: 32px !important; }
+.tiptap h2, .tiptap h2 *:not([class*="collaboration"]) { font-size: 23px !important; font-weight: 600 !important; line-height: 28px !important; }
+.tiptap h3, .tiptap h3 *:not([class*="collaboration"]) { font-size: 19px !important; font-weight: 600 !important; line-height: 24px !important; }
+.tiptap h4, .tiptap h4 *:not([class*="collaboration"]) { font-size: 15px !important; font-weight: 600 !important; line-height: 20px !important; }
+
+/* Collaboration cursor label */
+.collaboration-carets__label {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 16px !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+}
 
 
