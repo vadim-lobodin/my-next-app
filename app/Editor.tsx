@@ -23,7 +23,6 @@ export function Editor() {
       <Toolbar editor={editor} />
       <EditorContent editor={editor} className="editor flex-1 overflow-y-auto p-4" />
       <Threads editor={editor} />
-      <FloatingToolbar editor={editor} />
     </div>
   );
 }

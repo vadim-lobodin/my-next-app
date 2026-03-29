@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full dark" data-theme="dark">
-      <body className="h-full">
+      <body className="h-full" style={{ zoom: "110%" }}>
         <Providers>{children}</Providers>
       </body>
     </html>
