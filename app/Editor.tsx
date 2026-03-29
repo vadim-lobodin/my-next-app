@@ -40,6 +40,7 @@ export function Editor() {
       </div>
       <FloatingToolbar editor={editor}>
         <Toolbar.Button
+          name="comment"
           onClick={() => editor?.chain().focus().addPendingComment().run()}
         >
           <Icon fleet="add-comment" size="sm" />
