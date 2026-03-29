@@ -73,7 +73,7 @@ function NavContent() {
 
 function WorkflowStepsSidebar() {
   return (
-    <div className="flex flex-col h-full p-4 gap-3">
+    <div className="flex flex-col h-full px-4 pt-1 pb-4 gap-3">
       <Typography variant="header-3-semibold">
         Workflow steps
       </Typography>

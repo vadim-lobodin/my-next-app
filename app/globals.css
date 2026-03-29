@@ -1,32 +1,3 @@
-@import "tailwindcss";
-@import "@liveblocks/react-ui/styles.css";
-@import "@liveblocks/react-tiptap/styles.css";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 /* Hide Liveblocks badge */
 iframe[title*="Liveblocks"],
 div[data-liveblocks-portal],
@@ -52,13 +23,39 @@ body > div[style*="z-index: 2147483647"] {
 .tiptap {
   font-family: var(--fleet-font-family, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
   font-size: 13px !important;
+  color: var(--fleet-text-primary) !important;
 }
 
 /* Tiptap editor list styles */
-.tiptap ul { list-style-type: disc !important; padding-left: 1.5em !important; margin: 0.5em 0 !important; }
-.tiptap ol { list-style-type: decimal !important; padding-left: 1.5em !important; margin: 0.5em 0 !important; }
-.tiptap li { display: list-item !important; margin: 0.25em 0; }
-.tiptap li p { display: inline !important; }
+div.tiptap ul,
+div.ProseMirror ul {
+  list-style-type: disc !important;
+  list-style-position: inside !important;
+  padding-left: 1em !important;
+  margin: 0.5em 0 !important;
+}
+div.tiptap ol,
+div.ProseMirror ol {
+  list-style-type: decimal !important;
+  list-style-position: inside !important;
+  padding-left: 1em !important;
+  margin: 0.5em 0 !important;
+}
+div.tiptap li,
+div.ProseMirror li {
+  display: list-item !important;
+  padding: 3px 0 !important;
+}
+div.tiptap li > p,
+div.ProseMirror li > p {
+  display: inline !important;
+}
+
+/* Tiptap headings — match Air typography */
+.tiptap h1, .tiptap h1 strong { font-size: 26px !important; font-weight: 600 !important; line-height: 32px !important; }
+.tiptap h2, .tiptap h2 strong { font-size: 23px !important; font-weight: 600 !important; line-height: 28px !important; }
+.tiptap h3, .tiptap h3 strong { font-size: 19px !important; font-weight: 600 !important; line-height: 24px !important; }
+.tiptap h4, .tiptap h4 strong { font-size: 15px !important; font-weight: 600 !important; line-height: 20px !important; }
 
 /* Zoom */
 html {

@@ -3,6 +3,7 @@ import "@liveblocks/react-ui/styles.css";
 import "@liveblocks/react-ui/styles/dark/attributes.css";
 import "@liveblocks/react-tiptap/styles.css";
 import "@/styles/globals.css";
+import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
