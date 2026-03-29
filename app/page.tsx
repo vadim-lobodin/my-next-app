@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, ReactNode } from "react"
+import { motion } from "motion/react"
 import { Panel as ResizablePanel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import {
   Navigation,
@@ -139,17 +140,17 @@ function RightPanel() {
           </TabsList>
         </TabBar>
         <TabContentArea>
-          <TabsContent value="plan" className="mt-0 h-full">
+          <TabsContent value="plan" className="mt-0 h-full data-[state=inactive]:hidden" forceMount>
             <Room id="plan-doc">
               <Editor />
             </Room>
           </TabsContent>
-          <TabsContent value="requirements" className="mt-0 h-full">
+          <TabsContent value="requirements" className="mt-0 h-full data-[state=inactive]:hidden" forceMount>
             <Room id="requirements-doc">
               <Editor />
             </Room>
           </TabsContent>
-          <TabsContent value="tech-spec" className="mt-0 h-full">
+          <TabsContent value="tech-spec" className="mt-0 h-full data-[state=inactive]:hidden" forceMount>
             <WaitingState stepName="Requirements" />
           </TabsContent>
         </TabContentArea>
@@ -249,47 +250,72 @@ export default function Home() {
         className="flex-1 ml-[var(--nav-width-collapsed)] flex flex-col bg-[var(--fleet-background-primary)]"
         style={{ height: "100vh" }}
       >
-        <AppToolbar
-          projectName="jcp-spring-petclinic"
-          branchName="air/feature-workflow-2546"
-          taskName="Feature Workflow: Races Timeline Page"
-          rightExtra={
-            <div className="flex items-center gap-3">
-              <Room id="plan-doc"><Avatars /></Room>
-              <Button variant="primary" size="default">Share</Button>
-            </div>
-          }
-        />
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          <AppToolbar
+            projectName="jcp-spring-petclinic"
+            branchName="air/feature-workflow-2546"
+            taskName="Feature Workflow: Races Timeline Page"
+            rightExtra={
+              <div className="flex items-center gap-3">
+                <Room id="plan-doc"><Avatars /></Room>
+                <Button variant="primary" size="default">Share</Button>
+              </div>
+            }
+          />
+        </motion.div>
         <PanelGroup direction="horizontal" className="flex-1 min-h-0 pr-[var(--layout-gap)] pb-[var(--layout-gap)]">
           {/* Left: workflow steps */}
           <ResizablePanel defaultSize={18} minSize={12} maxSize={25}>
-            <div className="h-full rounded-[var(--fleet-radius-lg)] bg-[var(--fleet-island-background)] overflow-hidden">
+            <motion.div
+              className="h-full rounded-[var(--fleet-radius-lg)] bg-[var(--fleet-island-background)] overflow-hidden"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.35, delay: 0.1, ease: "easeOut" }}
+            >
               <WorkflowStepsSidebar activeStep={activeStep} onStepClick={setActiveStep} />
-            </div>
+            </motion.div>
           </ResizablePanel>
 
           <PanelResizeHandle className="w-2" />
 
           {/* Center: conversation — changes per selected step */}
           <ResizablePanel defaultSize={35} minSize={25}>
-            {stepMessages[activeStep].length > 0 ? (
-              <ChatIsland
-                key={activeStep}
-                className="h-full [&>div:last-child]:pb-0"
-                messages={stepMessages[activeStep]}
-              />
-            ) : (
-              <div className="h-full rounded-[var(--fleet-radius-lg)] bg-[var(--fleet-island-background)] flex items-center justify-center">
-                <WaitingState stepName="previous step" />
-              </div>
-            )}
+            <motion.div
+              className="h-full"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.2, ease: "easeOut" }}
+            >
+              {stepMessages[activeStep].length > 0 ? (
+                <ChatIsland
+                  key={activeStep}
+                  className="h-full [&>div:last-child]:pb-0"
+                  messages={stepMessages[activeStep]}
+                />
+              ) : (
+                <div className="h-full rounded-[var(--fleet-radius-lg)] bg-[var(--fleet-island-background)] flex items-center justify-center">
+                  <WaitingState stepName="previous step" />
+                </div>
+              )}
+            </motion.div>
           </ResizablePanel>
 
           <PanelResizeHandle className="w-2" />
 
           {/* Right: plan panel */}
           <ResizablePanel defaultSize={47} minSize={25} maxSize={60}>
-            <RightPanel />
+            <motion.div
+              className="h-full"
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.35, delay: 0.3, ease: "easeOut" }}
+            >
+              <RightPanel />
+            </motion.div>
           </ResizablePanel>
         </PanelGroup>
       </div>

@@ -11,7 +11,7 @@ const PUBLIC_KEY = "pk_dev_KstT8AO1aN2quhmYhaB5bPl8aUFDrn1rQCWtp4qv6T5AuEo0TXYQT
 
 export function LiveblocksWrapper({ children }: { children: ReactNode }) {
   return (
-    <LiveblocksProvider publicApiKey={PUBLIC_KEY}>
+    <LiveblocksProvider publicApiKey={PUBLIC_KEY} badgeLocation="bottom-left">
       {children}
     </LiveblocksProvider>
   );
@@ -20,7 +20,7 @@ export function LiveblocksWrapper({ children }: { children: ReactNode }) {
 export function Room({ id, children }: { id: string; children: ReactNode }) {
   return (
     <RoomProvider id={id}>
-      <ClientSideSuspense fallback={<div style={{ padding: 16, color: "var(--fleet-text-tertiary)" }}>Loading…</div>}>
+      <ClientSideSuspense fallback={null}>
         {children}
       </ClientSideSuspense>
     </RoomProvider>
