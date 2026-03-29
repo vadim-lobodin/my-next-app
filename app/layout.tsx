@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full dark" data-theme="dark">
-      <body className="h-full" style={{ transform: "scale(1.1)", transformOrigin: "0 0", width: "90.91vw", height: "90.91vh", overflow: "hidden" }}>
+      <body className="h-full">
         <Providers>{children}</Providers>
       </body>
     </html>
