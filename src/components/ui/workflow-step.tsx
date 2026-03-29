@@ -25,12 +25,12 @@ export interface WorkflowStepProps {
 const statusConfig: Record<WorkflowStepStatus, { icon: string; animate?: boolean }> = {
   done: { icon: "task-completed" },
   "in-progress": { icon: "progress", animate: true },
-  todo: { icon: "run" },
+  todo: { icon: "task-draft" },
 }
 
 const lineColors: Record<WorkflowStepStatus, string> = {
   done: "var(--fleet-banner-border-positive, #255a44)",
-  "in-progress": "var(--fleet-banner-border-info, #225090)",
+  "in-progress": "var(--fleet-border-disabled, rgba(255,255,255,0.11))",
   todo: "var(--fleet-border-disabled, rgba(255,255,255,0.11))",
 }
 
@@ -43,31 +43,23 @@ export const WorkflowStep = React.forwardRef<HTMLDivElement, WorkflowStepProps>(
       <div
         ref={ref}
         className={cn(
-          "flex gap-3 min-h-[36px]",
+          "flex gap-2 items-start",
           onClick && "cursor-pointer",
           className,
         )}
         onClick={onClick}
       >
-        {/* Timeline column: dot + line */}
-        <div className="flex flex-col items-center w-4 shrink-0">
-          {/* Status icon */}
+        {/* Status icon */}
+        <div className="flex items-center w-4 shrink-0 mt-[3px]">
           <Icon
             fleet={config.icon}
             size="sm"
             className={cn("shrink-0", config.animate && "animate-spin")}
           />
-          {/* Connecting line */}
-          {!isLast && (
-            <div
-              className="flex-1 w-px min-h-[12px]"
-              style={{ background: lineColor }}
-            />
-          )}
         </div>
 
         {/* Content */}
-        <div className="flex flex-col flex-1 min-w-0 pb-3">
+        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
           <Typography variant="default-semibold">
             {title}
           </Typography>

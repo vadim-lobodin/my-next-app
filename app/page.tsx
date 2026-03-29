@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, ReactNode } from "react"
 import { Panel as ResizablePanel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import {
   Navigation,
@@ -21,9 +21,13 @@ import {
   Button,
   AppToolbar,
 } from "@/components/ui"
-import { Room } from "./Room"
+import { LiveblocksWrapper, Room } from "./Room"
 import { Editor } from "./Editor"
 import { Avatars } from "./Avatars"
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type StepId = "feature-workflow" | "requirements" | "tech-spec" | "build" | "review"
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
 
@@ -71,22 +75,41 @@ function NavContent() {
 
 // ─── Workflow steps sidebar ──────────────────────────────────────────────────
 
-function WorkflowStepsSidebar() {
+interface WorkflowStepsSidebarProps {
+  activeStep: StepId
+  onStepClick: (step: StepId) => void
+}
+
+function WorkflowStepsSidebar({ activeStep, onStepClick }: WorkflowStepsSidebarProps) {
+  const steps: { id: StepId; title: string; hint?: string; status: "done" | "in-progress" | "todo"; isLast?: boolean }[] = [
+    { id: "feature-workflow", title: "Feature Workflow", hint: "plan.md", status: "done" },
+    { id: "requirements", title: "Requirements", hint: "requirements.md", status: "in-progress" },
+    { id: "tech-spec", title: "Technical Specification", hint: "spec.md", status: "todo" },
+    { id: "build", title: "Build", status: "todo" },
+    { id: "review", title: "Review", status: "todo", isLast: true },
+  ]
+
   return (
-    <div className="flex flex-col h-full px-4 pt-1 pb-4 gap-3">
+    <div className="flex flex-col h-full p-4 gap-3">
       <Typography variant="header-3-semibold">
         Workflow steps
       </Typography>
       <ScrollArea className="flex-1">
         <div className="flex flex-col">
-          <WorkflowStep title="Feature Workflow" hint="plan.md" status="done" />
-          <WorkflowStep title="Requirements" hint="requirements.md" status="in-progress" />
-          <WorkflowStep title="Technical Specification" hint="spec.md" status="todo" />
-          <WorkflowStep title="Build" status="todo" />
-          <WorkflowStep title="Review" status="todo" isLast />
-          <Button variant="ghost" size="default" iconLeft="add" className="w-fit min-w-0">
-            Add step
-          </Button>
+          {steps.map((step) => (
+            <WorkflowStep
+              key={step.id}
+              title={step.title}
+              hint={step.hint}
+              status={step.status}
+              isLast={step.isLast}
+              onClick={() => onStepClick(step.id)}
+              className={activeStep === step.id
+                ? "bg-[var(--fleet-listItem-background-focused)] rounded-[4px] pl-1 pr-2 py-2 cursor-pointer"
+                : "cursor-pointer pl-1 pr-2 py-2 rounded-[4px] hover:bg-[var(--fleet-listItem-background-hovered)]"
+              }
+            />
+          ))}
         </div>
       </ScrollArea>
     </div>
@@ -94,6 +117,17 @@ function WorkflowStepsSidebar() {
 }
 
 // ─── Right panel ─────────────────────────────────────────────────────────────
+
+function WaitingState({ stepName }: { stepName: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-2" style={{ color: "var(--fleet-text-tertiary)" }}>
+      <Icon fleet="task-draft" size="lg" />
+      <Typography variant="default" style={{ color: "var(--fleet-text-tertiary)" }}>
+        Waiting for {stepName} to complete
+      </Typography>
+    </div>
+  )
+}
 
 function RightPanel() {
   return (
@@ -108,55 +142,113 @@ function RightPanel() {
         </TabBar>
         <TabContentArea>
           <TabsContent value="plan" className="mt-0 h-full">
-            <Editor />
+            <Room id="plan-doc">
+              <Editor />
+            </Room>
           </TabsContent>
-          <TabsContent value="requirements" className="mt-0 h-full" />
-          <TabsContent value="tech-spec" className="mt-0 h-full" />
+          <TabsContent value="requirements" className="mt-0 h-full">
+            <Room id="requirements-doc">
+              <Editor />
+            </Room>
+          </TabsContent>
+          <TabsContent value="tech-spec" className="mt-0 h-full">
+            <WaitingState stepName="Requirements" />
+          </TabsContent>
         </TabContentArea>
       </Tabs>
     </IslandWithTabs>
   )
 }
 
-// ─── Chat messages ───────────────────────────────────────────────────────────
+// ─── Chat messages per step ──────────────────────────────────────────────────
 
-const chatMessages = [
-  { id: "1", role: "user" as const, content: "Create or update my AGENTS.md file." },
-  {
-    id: "2",
-    role: "assistant" as const,
-    content: (
-      <Typography variant="default-chat" as="div" className="flex flex-col gap-3">
-        <p>Created <strong>AGENTS.md</strong> at the repo root and populated it with project-specific guidance based on the current codebase.</p>
-        <div>
-          <Typography variant="default-chat" as="p" className="font-semibold mb-1">What I added</Typography>
+const stepMessages: Record<StepId, { id: string; role: "user" | "assistant"; content: ReactNode }[]> = {
+  "feature-workflow": [
+    { id: "fw-1", role: "user", content: "Create or update my AGENTS.md file." },
+    {
+      id: "fw-2",
+      role: "assistant",
+      content: (
+        <Typography variant="default-chat" as="div" className="flex flex-col gap-3">
+          <p>Created <strong>AGENTS.md</strong> at the repo root and populated it with project-specific guidance based on the current codebase.</p>
+          <div>
+            <Typography variant="default-chat" as="p" className="font-semibold mb-1">What I added</Typography>
+            <ul className="list-disc pl-5 flex flex-col gap-1" style={{ color: "var(--fleet-text-secondary)" }}>
+              <li>Repo summary (Next.js 15 + React 19 + TypeScript + Tailwind 4)</li>
+              <li>Key directories and responsibilities (<code>src/app</code>, <code>src/components/ui</code>, <code>src/lib</code>, <code>public/mp3</code>)</li>
+              <li>Common npm commands (<code>dev</code>, <code>lint</code>, <code>build</code>, <code>start</code>)</li>
+              <li>Required env vars for voting API (<code>KV_REST_API_URL</code>, <code>KV_REST_API_TOKEN</code>)</li>
+              <li>Coding conventions and architectural patterns to follow</li>
+              <li>API behavior notes for <code>/api/vote</code></li>
+            </ul>
+          </div>
+          <div>
+            <Typography variant="default-chat" as="p" className="font-semibold mb-1">Git actions completed</Typography>
+            <ul className="list-disc pl-5 flex flex-col gap-1" style={{ color: "var(--fleet-text-secondary)" }}>
+              <li>Committed: <strong>Add AGENTS.md with repository-specific agent guidance</strong></li>
+              <li>Pushed to: <code>cursor/agents-markdown-file-5a13</code></li>
+              <li>Created draft PR targeting <strong>main</strong> (updated/created as required)</li>
+            </ul>
+          </div>
+        </Typography>
+      ),
+    },
+  ],
+  "requirements": [
+    { id: "req-1", role: "user", content: "Generate a PRD for the Races Timeline feature." },
+    {
+      id: "req-2",
+      role: "assistant",
+      content: (
+        <Typography variant="default-chat" as="div" className="flex flex-col gap-3">
+          <p>I've analyzed the codebase and have a few clarifying questions before drafting the PRD:</p>
           <ul className="list-disc pl-5 flex flex-col gap-1" style={{ color: "var(--fleet-text-secondary)" }}>
-            <li>Repo summary (Next.js 15 + React 19 + TypeScript + Tailwind 4)</li>
-            <li>Key directories and responsibilities (<code>src/app</code>, <code>src/components/ui</code>, <code>src/lib</code>, <code>public/mp3</code>)</li>
-            <li>Common npm commands (<code>dev</code>, <code>lint</code>, <code>build</code>, <code>start</code>)</li>
-            <li>Required env vars for voting API (<code>KV_REST_API_URL</code>, <code>KV_REST_API_TOKEN</code>)</li>
-            <li>Coding conventions and architectural patterns to follow</li>
-            <li>API behavior notes for <code>/api/vote</code></li>
+            <li>Should the timeline show all historical races or only upcoming ones?</li>
+            <li>Do we need filtering by race category (F1, MotoGP, etc.)?</li>
+            <li>Should users be able to set reminders for upcoming races?</li>
           </ul>
-        </div>
-        <div>
-          <Typography variant="default-chat" as="p" className="font-semibold mb-1">Git actions completed</Typography>
-          <ul className="list-disc pl-5 flex flex-col gap-1" style={{ color: "var(--fleet-text-secondary)" }}>
-            <li>Committed: <strong>Add AGENTS.md with repository-specific agent guidance</strong></li>
-            <li>Pushed to: <code>cursor/agents-markdown-file-5a13</code></li>
-            <li>Created draft PR targeting <strong>main</strong> (updated/created as required)</li>
-          </ul>
-        </div>
-      </Typography>
-    ),
-  },
-]
+        </Typography>
+      ),
+    },
+    { id: "req-3", role: "user", content: "All races, both past and upcoming. Yes to filtering. No reminders for now." },
+    {
+      id: "req-4",
+      role: "assistant",
+      content: (
+        <Typography variant="default-chat" as="div" className="flex flex-col gap-3">
+          <p>Got it. I've drafted the PRD and saved it to <code>artifacts/requirements.md</code>.</p>
+          <p>The document covers user stories, acceptance criteria, and scope boundaries. Ready for your review.</p>
+        </Typography>
+      ),
+    },
+  ],
+  "tech-spec": [
+    { id: "ts-1", role: "user", content: "Create the technical specification based on the requirements." },
+    {
+      id: "ts-2",
+      role: "assistant",
+      content: (
+        <Typography variant="default-chat" as="div" className="flex flex-col gap-3">
+          <p>Working on the technical specification. I'll review the existing codebase architecture and identify reusable components...</p>
+        </Typography>
+      ),
+    },
+  ],
+  "build": [
+    { id: "b-1", role: "assistant", content: "Waiting for the Technical Specification step to complete before starting the build." },
+  ],
+  "review": [
+    { id: "r-1", role: "assistant", content: "The review step will begin once the build is complete." },
+  ],
+}
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const [activeStep, setActiveStep] = useState<StepId>("feature-workflow")
+
   return (
-    <Room>
+    <LiveblocksWrapper>
     <div
       className="h-screen flex"
       style={{
@@ -180,7 +272,7 @@ export default function Home() {
           taskName="Feature Workflow: Races Timeline Page"
           rightExtra={
             <div className="flex items-center gap-3">
-              <Avatars />
+              <Room id="plan-doc"><Avatars /></Room>
               <Button variant="primary" size="default">Share</Button>
             </div>
           }
@@ -189,17 +281,18 @@ export default function Home() {
           {/* Left: workflow steps */}
           <ResizablePanel defaultSize={18} minSize={12} maxSize={25}>
             <div className="h-full rounded-[var(--fleet-radius-lg)] bg-[var(--fleet-island-background)] overflow-hidden">
-              <WorkflowStepsSidebar />
+              <WorkflowStepsSidebar activeStep={activeStep} onStepClick={setActiveStep} />
             </div>
           </ResizablePanel>
 
           <PanelResizeHandle className="w-2" />
 
-          {/* Center: conversation */}
+          {/* Center: conversation — changes per selected step */}
           <ResizablePanel defaultSize={35} minSize={25}>
             <ChatIsland
+              key={activeStep}
               className="h-full [&>div:last-child]:pb-0"
-              messages={chatMessages}
+              messages={stepMessages[activeStep]}
             />
           </ResizablePanel>
 
@@ -212,6 +305,6 @@ export default function Home() {
         </PanelGroup>
       </div>
     </div>
-    </Room>
+    </LiveblocksWrapper>
   )
 }

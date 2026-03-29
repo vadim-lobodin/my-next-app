@@ -333,7 +333,7 @@ function NavigationRoot({ children, className, alwaysExpanded, ...props }: Navig
       >
         <div
           className={cn(
-            "flex overflow-hidden flex-1 flex-col justify-between min-w-0 min-h-0 pt-4 px-2 pb-2 rounded-lg",
+            "flex overflow-hidden flex-1 flex-col justify-between min-w-0 min-h-0 pt-[3px] px-2 pb-2 rounded-lg",
             expanded && !alwaysExpanded && "border-r border-white/[0.04] bg-white/[0.04] backdrop-blur-[20px]",
           )}
         >

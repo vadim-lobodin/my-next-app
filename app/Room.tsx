@@ -7,14 +7,22 @@ import {
   ClientSideSuspense,
 } from "@liveblocks/react/suspense";
 
-export function Room({ children }: { children: ReactNode }) {
+const PUBLIC_KEY = "pk_dev_KstT8AO1aN2quhmYhaB5bPl8aUFDrn1rQCWtp4qv6T5AuEo0TXYQT0TZvrVB4DGH";
+
+export function LiveblocksWrapper({ children }: { children: ReactNode }) {
   return (
-    <LiveblocksProvider publicApiKey={"pk_dev_KstT8AO1aN2quhmYhaB5bPl8aUFDrn1rQCWtp4qv6T5AuEo0TXYQT0TZvrVB4DGH"}>
-      <RoomProvider id="my-room">
-        <ClientSideSuspense fallback={<div>Loading…</div>}>
-          {children}
-        </ClientSideSuspense>
-      </RoomProvider>
+    <LiveblocksProvider publicApiKey={PUBLIC_KEY}>
+      {children}
     </LiveblocksProvider>
+  );
+}
+
+export function Room({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <RoomProvider id={id}>
+      <ClientSideSuspense fallback={<div style={{ padding: 16, color: "var(--fleet-text-tertiary)" }}>Loading…</div>}>
+        {children}
+      </ClientSideSuspense>
+    </RoomProvider>
   );
 }

@@ -8,12 +8,34 @@ a[href*="liveblocks.io/powered-by"] {
   overflow: hidden !important;
 }
 
-/* Liveblocks UI font override */
+/* Liveblocks UI font + sizing override */
 .lb-root,
 .lb-tiptap-toolbar,
-.lb-tiptap-floating-toolbar {
+.lb-tiptap-floating-toolbar,
+[data-liveblocks-portal],
+[data-liveblocks-portal] * {
   font-family: var(--fleet-font-family, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
+  font-size: 13px !important;
 }
+
+/* Liveblocks dropdowns, menus, popups — Air spacing */
+.lb-dropdown,
+.lb-popover,
+.lb-tiptap-toolbar-block-selector-dropdown,
+[data-liveblocks-portal] [role="listbox"],
+[data-liveblocks-portal] [role="menu"] {
+  padding: var(--fleet-radius-xs, 3px) !important;
+  border-radius: var(--fleet-radius-md, 6px) !important;
+}
+
+.lb-dropdown-item,
+[data-liveblocks-portal] [role="option"],
+[data-liveblocks-portal] [role="menuitem"] {
+  padding: 4px 8px !important;
+  border-radius: var(--fleet-radius-xs, 3px) !important;
+  gap: 6px !important;
+}
+
 .tiptap > *:not(.lb-root):not([class*="lb-"]):not([class*="collaboration"]) {
   font-family: var(--fleet-font-family, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
   font-size: 13px !important;
@@ -56,7 +78,10 @@ div.ProseMirror li > p {
 .tiptap h3, .tiptap h3 strong { font-size: 19px !important; font-weight: 600 !important; line-height: 24px !important; }
 .tiptap h4, .tiptap h4 strong { font-size: 15px !important; font-weight: 600 !important; line-height: 20px !important; }
 
-/* Zoom */
-html {
-  font-size: 110%;
+/* FloatingToolbar — hide formatting, keep only Comment */
+.lb-tiptap-floating-toolbar-container .lb-tiptap-toolbar-toggle,
+.lb-tiptap-floating-toolbar-container .lb-tiptap-toolbar-separator,
+.lb-tiptap-floating-toolbar-container .lb-tiptap-toolbar-block-selector {
+  display: none !important;
 }
+
