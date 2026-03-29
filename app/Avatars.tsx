@@ -3,7 +3,7 @@
 import { useOthers, useSelf } from "@liveblocks/react/suspense";
 import { AnimatePresence, motion } from "motion/react";
 
-const COLORS = [
+const COLORS: [string, string][] = [
   ["#E57373", "#C62828"],
   ["#F06292", "#AD1457"],
   ["#BA68C8", "#6A1B9A"],
