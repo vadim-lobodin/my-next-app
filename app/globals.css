@@ -77,10 +77,10 @@ div.ProseMirror li > p {
 }
 
 /* Tiptap headings — match Air typography */
-.tiptap h1, .tiptap h1 strong { font-size: 26px !important; font-weight: 600 !important; line-height: 32px !important; }
-.tiptap h2, .tiptap h2 strong { font-size: 23px !important; font-weight: 600 !important; line-height: 28px !important; }
-.tiptap h3, .tiptap h3 strong { font-size: 19px !important; font-weight: 600 !important; line-height: 24px !important; }
-.tiptap h4, .tiptap h4 strong { font-size: 15px !important; font-weight: 600 !important; line-height: 20px !important; }
+.tiptap h1, .tiptap h1 * { font-size: 26px !important; font-weight: 600 !important; line-height: 32px !important; }
+.tiptap h2, .tiptap h2 * { font-size: 23px !important; font-weight: 600 !important; line-height: 28px !important; }
+.tiptap h3, .tiptap h3 * { font-size: 19px !important; font-weight: 600 !important; line-height: 24px !important; }
+.tiptap h4, .tiptap h4 * { font-size: 15px !important; font-weight: 600 !important; line-height: 20px !important; }
 
 /* FloatingToolbar — hide formatting, keep only Comment */
 .lb-tiptap-floating-toolbar-container .lb-tiptap-toolbar-toggle,
