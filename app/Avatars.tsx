@@ -48,12 +48,14 @@ const animationProps = {
   },
 };
 
-function LetterAvatar({
+function UserAvatar({
   name,
+  picture,
   color,
   style,
 }: {
   name: string;
+  picture?: string;
   color: [string, string];
   style?: React.CSSProperties;
 }) {
@@ -72,21 +74,37 @@ function LetterAvatar({
         ...style,
       }}
     >
-      <div
-        style={{
-          backgroundImage: `linear-gradient(to bottom right, ${color[0]}, ${color[1]})`,
-          borderRadius: 9999,
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <span style={{ color: textColor, fontWeight: 500, fontSize: 11 }}>
-          {name.charAt(0).toUpperCase()}
-        </span>
-      </div>
+      {picture ? (
+        <img
+          src={picture}
+          alt={name}
+          referrerPolicy="no-referrer"
+          style={{
+            borderRadius: 9999,
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            backgroundImage: `linear-gradient(to bottom right, ${color[0]}, ${color[1]})`,
+            borderRadius: 9999,
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ color: textColor, fontWeight: 500, fontSize: 11 }}>
+            {name.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -153,11 +171,13 @@ export function Avatars() {
           .reverse()
           .map(({ connectionId, info }) => {
             const name = (info as any)?.name || `U${connectionId}`;
+            const picture = (info as any)?.picture;
             const color = getColor(connectionId);
             return (
               <motion.div key={connectionId} {...animationProps}>
-                <LetterAvatar
+                <UserAvatar
                   name={name}
+                  picture={picture}
                   color={color}
                   style={{ marginLeft: "-0.35rem" }}
                 />
@@ -167,8 +187,9 @@ export function Avatars() {
 
         {self ? (
           <motion.div key="you" {...animationProps}>
-            <LetterAvatar
+            <UserAvatar
               name={(self.info as any)?.name || "You"}
+              picture={(self.info as any)?.picture}
               color={getColor(self.connectionId)}
               style={{ marginLeft: "-0.35rem" }}
             />
