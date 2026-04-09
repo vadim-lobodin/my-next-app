@@ -151,7 +151,7 @@ QuestionWidget.displayName = "QuestionWidget"
 
 // ===== INPUT QUESTION WIDGET =====
 
-export interface InputQuestionWidgetProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface InputQuestionWidgetProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSubmit'> {
   /** Question/prompt text */
   question: string
   /** Placeholder for the text input */
