@@ -1219,13 +1219,10 @@ function ReportTabContent({ appliedCount }: { appliedCount: number }) {
       <div className="space-y-3">
         <Typography variant="header-3-semibold">Auto-fix ({hasApplied ? `${appliedCount} applied` : autoFixItems.length})</Typography>
         {autoFixItems.map(item => (
-          <div key={item.id} className="flex gap-2">
-            <Icon lucide="Check" size="xs" className="shrink-0 mt-0.5" style={{ color: hasApplied ? "var(--fleet-green)" : "var(--fleet-text-secondary)" }} />
-            <div>
-              <Typography variant="default-semibold">{item.title}</Typography>
-              <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>{item.oneLine}</Typography>
-              {item.files.length > 0 && <Typography variant="default" className="mt-0.5 font-mono text-[12px]" style={{ color: "var(--fleet-text-secondary)" }}>{item.files.join(", ")}</Typography>}
-            </div>
+          <div key={item.id}>
+            <Typography variant="default-semibold">{item.title}</Typography>
+            <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>{item.oneLine}</Typography>
+            {item.files.length > 0 && <Typography variant="default" className="mt-0.5 font-mono text-[12px]" style={{ color: "var(--fleet-text-secondary)" }}>{item.files.join(", ")}</Typography>}
           </div>
         ))}
       </div>
@@ -1233,12 +1230,9 @@ function ReportTabContent({ appliedCount }: { appliedCount: number }) {
       <div className="space-y-3">
         <Typography variant="header-3-semibold">Recommendations ({recommendationItems.length})</Typography>
         {recommendationItems.map(item => (
-          <div key={item.id} className="flex gap-2">
-            <span className="shrink-0 mt-0.5" style={{ color: "var(--fleet-text-secondary)" }}>·</span>
-            <div>
-              <Typography variant="default-semibold">{item.title}</Typography>
-              <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>{item.oneLine}</Typography>
-            </div>
+          <div key={item.id}>
+            <Typography variant="default-semibold">{item.title}</Typography>
+            <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>{item.oneLine}</Typography>
           </div>
         ))}
       </div>
