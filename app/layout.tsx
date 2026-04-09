@@ -5,6 +5,7 @@ import "@liveblocks/react-tiptap/styles.css";
 import "@/styles/globals.css";
 import "./globals.css";
 import Providers from "./providers";
+import PasswordGate from "./password-gate";
 
 export const metadata: Metadata = {
   title: "Air App",
@@ -19,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full dark" data-theme="dark">
       <body className="h-full">
-        <Providers>{children}</Providers>
+        <Providers><PasswordGate>{children}</PasswordGate></Providers>
       </body>
     </html>
   );
