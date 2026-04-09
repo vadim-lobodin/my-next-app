@@ -817,7 +817,7 @@ function SecretsForm({ appSecrets, appSecretValues, onAddSecret }: { appSecrets:
           <div key={i} className="flex items-center gap-2">
             <TextInput placeholder="Key" value={secret.key} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSecret(i, "key", e.target.value)} className="flex-1" />
             <div className="flex-1 relative">
-              <TextInput type={secret.visible ? "text" : "password"} placeholder="Value" value={secret.value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSecret(i, "value", e.target.value)} className="w-full pr-8" />
+              <TextInput type={secret.visible ? "text" : "password"} placeholder="Value" value={secret.value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSecret(i, "value", e.target.value)} className="w-full pr-8" autoComplete="off" data-1p-ignore />
               <Button variant="ghost" size="icon" onClick={() => toggleSecretVisibility(i)} className="absolute right-1 top-1/2 -translate-y-1/2">
                 <Icon lucide={secret.visible ? "Eye" : "EyeOff"} />
               </Button>

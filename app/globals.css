@@ -82,6 +82,17 @@ div.ProseMirror li > p {
 .tiptap h3, .tiptap h3 *:not([class*="collaboration"]) { font-size: 19px !important; font-weight: 600 !important; line-height: 24px !important; }
 .tiptap h4, .tiptap h4 *:not([class*="collaboration"]) { font-size: 15px !important; font-weight: 600 !important; line-height: 20px !important; }
 
+/* Override browser autofill styling for dark theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--fleet-input-background-default, #2b2d30) inset !important;
+  -webkit-text-fill-color: var(--fleet-text-primary, #fff) !important;
+  caret-color: var(--fleet-text-primary, #fff) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Collaboration cursor label */
 .collaboration-carets__label {
   font-size: 11px !important;
