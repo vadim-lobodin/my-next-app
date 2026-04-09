@@ -1303,42 +1303,21 @@ function OptimizationReportPanel({ onClose, appliedCount }: { onClose: () => voi
 // ============================================================================
 
 function PRModal({ st, onClose, onCreatePr }: { st: AppState; onClose: () => void; onCreatePr: () => void }) {
-  const level: ValidationLevel = st.validationLevel ?? "PARTIAL"
-  const isFull = level === "FULL"
-  const title = "Configure cloud environment for agent runs"
-  const description = `This change adds a reproducible cloud environment configuration for agent runs.\nValidation: ${level}.\nSecrets referenced: DATABASE_URL${st.secrets.NPM_TOKEN === "provided" ? ", NPM_TOKEN" : ""}.`
+  const hasOpt = st.optimizationApplied
+  const title = hasOpt ? "Configure environment and apply agent optimizations" : "Configure cloud environment for agent runs"
 
   return (
-    <DialogRoot open onOpenChange={(open: boolean) => { if (!open) onClose() }}>
-      <DialogPortal>
-        <DialogOverlay />
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create pull request</DialogTitle>
-          </DialogHeader>
-          <div className="p-4 space-y-4">
-            <div>
-              <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Title</label>
-              <TextInput readOnly value={title} />
-            </div>
-            <div>
-              <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Description</label>
-              <Textarea readOnly value={description} rows={4} resize="none" />
-            </div>
-            <div className="space-y-1">
-              <Checkbox label="Environment config generated" checked disabled />
-              <Checkbox label="Validation run completed" checked disabled />
-              <Checkbox label="Test command validated" checked={isFull} disabled />
-              <Checkbox label="Test command skipped" checked={!isFull} disabled />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button variant="primary" onClick={onCreatePr}>Create PR</Button>
-          </DialogFooter>
-        </DialogContent>
-      </DialogPortal>
-    </DialogRoot>
+    <FleetDialog
+      open
+      title="Create pull request"
+      body={`${title}\n\nThis will create a pull request with the ${hasOpt ? "environment configuration and agent optimization changes" : "environment configuration"} captured during setup.`}
+      buttons={[
+        { label: "Cancel", variant: "secondary" as const, onClick: onClose },
+        { label: "Create PR", variant: "primary" as const, onClick: onCreatePr },
+      ]}
+      showClose
+      onClose={onClose}
+    />
   )
 }
 
