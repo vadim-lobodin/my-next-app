@@ -41,8 +41,4 @@ yarn-error.log*
 next-env.d.ts
 .npmrc
 
-# air-web-components (installed via prebuild, symlinked locally)
-/src/components
-/src/lib
-/src/styles
 /AGENTS.md

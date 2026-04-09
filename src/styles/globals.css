@@ -1,0 +1,925 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import "tailwindcss";
+@import "./fleet-semantic-vars-light.css";
+@import "./fleet-semantic-vars-dark.css";
+@source "../components";
+@source "../lib";
+
+@font-face {
+  font-family: "KomunaVar";
+  src: url("/fonts/KomunaVar.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Fleet Air Typography - Font Families */
+  --font-inter: "Inter Variable", "Inter", sans-serif;
+  --font-komuna: "KomunaVar", sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono", "SF Mono", "Monaco", "Inconsolata", "Fira Code", "Fira Mono", "Droid Sans Mono", "Consolas", "Liberation Mono", "Menlo", "Courier", monospace;
+
+  /* Fleet Air Typography - Font Sizes */
+  --text-header-0: 1.625rem;     /* 26px */
+  --text-header-1: 1.4375rem;    /* 23px */
+  --text-header-2: 1.1875rem;    /* 19px */
+  --text-header-3: 0.9375rem;    /* 15px */
+  --text-header-4: 0.8125rem;    /* 13px */
+  --text-header-5: 0.625rem;     /* 10px */
+  --text-default: 0.8125rem;     /* 13px */
+  --text-default-multiline: 0.8125rem; /* 13px */
+  --text-default-chat: 0.8125rem; /* 13px */
+  --text-medium: 0.75rem;        /* 12px */
+  --text-small: 0.625rem;        /* 10px */
+  --text-code: 0.8125rem;        /* 13px */
+
+  /* Override Tailwind 4 font size theme variables with Fleet sizes */
+  --text-xs: var(--text-small);     /* 10px - Fleet small */
+  --text-sm: var(--text-default);   /* 13px - Fleet default */
+  --text-base: var(--text-default); /* 13px - Fleet default */
+  --text-lg: var(--text-header-3);  /* 15px - Fleet header-3 */
+  --text-xl: var(--text-header-2);  /* 19px - Fleet header-2 */
+  --text-2xl: var(--text-header-1); /* 23px - Fleet header-1 */
+  --text-3xl: var(--text-header-0); /* 26px - Fleet header-0 */
+
+  /* Fleet Air Typography - Line Heights */
+  --leading-header-0: 1.231;     /* 32px / 26px */
+  --leading-header-1: 1.217;     /* 28px / 23px */
+  --leading-header-2: 1.263;     /* 24px / 19px */
+  --leading-header-3: 1.333;     /* 20px / 15px */
+  --leading-header-4: 1.385;     /* 18px / 13px */
+  --leading-header-5: 1.4;       /* 14px / 10px */
+  --leading-default: 1.231;      /* 16px / 13px */
+  --leading-default-multiline: 1.385; /* 18px / 13px */
+  --leading-default-chat: 1.538;  /* 20px / 13px */
+  --leading-medium: 1.333;       /* 16px / 12px */
+  --leading-small: 1.4;          /* 14px / 10px */
+  --leading-code: 1.692;         /* 22px / 13px */
+
+  /* Dark Theme Font Weights (from Figma Typography spec) */
+  --font-weight-light: 400;
+  --font-weight-regular: 480;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-code: 400;
+  --font-weight-code-bold: 700;
+  --font-weight-header3-regular: 450;
+  --font-weight-medium-semibold: 625;
+  --tracking-header-3: 0.001em;    /* 0.1% */
+  --tracking-header-4: 0.004em;    /* 0.4% */
+  --tracking-header-5: 0.1em;      /* 10% */
+  --tracking-medium: 0.005em;      /* 0.5% */
+  --tracking-small: 0.006em;       /* 0.6% */
+  --tracking-default: 0.004em;     /* 0.4% */
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: var(--fleet-background-primary);
+  --foreground: var(--fleet-text-primary);
+  --card: var(--fleet-island-background);
+  --card-foreground: var(--fleet-text-primary);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: var(--fleet-border);
+  --input: var(--fleet-border);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: var(--fleet-border);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* --- Fleet Semantic Color Variables (auto-generated) --- */
+  /* These will be replaced by a build step or manually pasted for now */
+  /* Example: */
+  /* --fleet-button-primary-background-default: #0870E4; */
+  --fleet-background-hover: var(--fleet-listItem-background-hovered);
+  --fleet-background-selected: var(--fleet-listItem-background-selected);
+
+  /* Fleet shadow tokens */
+  --fleet-shadow-sm: 0 0 1px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.25);
+  --fleet-shadow-md: 0 0 1px rgba(0,0,0,0.5), 0 8px 16px rgba(0,0,0,0.25);
+  --fleet-shadow-lg: 0px 16px 32px 0px rgba(0,0,0,0.4), 0px 0px 1px 0px rgba(0,0,0,0.5);
+
+  /* Fleet overlay */
+  --fleet-overlay-background: rgba(0,0,0,0.4);
+
+  /* Fleet git diff color aliases */
+  --fleet-git-text-added: var(--fleet-editor-gitDiff-text-added);
+  --fleet-git-text-deleted: var(--fleet-editor-gitDiff-text-deleted);
+
+  /* Fleet link color */
+  --fleet-link-text: #7f80f9;
+
+  /* Fleet context/snippet background */
+  --fleet-context-background: rgba(255,255,255,0.09);
+
+  /* Fleet border radius tokens */
+  --fleet-radius-xs: 3px;
+  --fleet-radius-sm: 4px;
+  --fleet-radius-md: 6px;
+  --fleet-radius-lg: 8px;
+}
+
+.dark {
+  --background: var(--fleet-background-primary);
+  --foreground: var(--fleet-text-primary);
+  --card: var(--fleet-island-background);
+  --card-foreground: var(--fleet-text-primary);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: var(--fleet-border);
+  --input: var(--fleet-border);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: var(--fleet-border);
+  --sidebar-ring: oklch(0.556 0 0);
+
+  /* Dark theme overrides for new tokens */
+  --fleet-context-background: rgba(255,255,255,0.09);
+  --fleet-link-text: #7f80f9;
+
+  /* Dark Theme Font Weights & Letter Spacing */
+  --font-weight-light: 400;
+  --font-weight-regular: 480;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-code: 400;
+  --font-weight-code-bold: 700;
+  --font-weight-header3-regular: 450;
+  --font-weight-medium-semibold: 625;
+  --tracking-header-3: 0.001em;    /* 0.1% */
+  --tracking-header-4: 0.004em;    /* 0.4% */
+  --tracking-header-5: 0.1em;      /* 10% */
+  --tracking-medium: 0.005em;      /* 0.5% */
+  --tracking-small: 0.006em;       /* 0.6% */
+  --tracking-default: 0.004em;     /* 0.4% */
+
+  /* --- Fleet Semantic Color Variables (auto-generated) --- */
+  /* These will be replaced by a build step or manually pasted for now */
+  /* Example: */
+  /* --fleet-button-primary-background-default: #4B8DEC; */
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Fleet Air Typography Utilities */
+@layer components {
+  /* Font Sizes */
+  .text-header-0 {
+    font-size: var(--text-header-0);
+  }
+  .text-header-1 {
+    font-size: var(--text-header-1);
+  }
+  .text-header-2 {
+    font-size: var(--text-header-2);
+  }
+  .text-header-3 {
+    font-size: var(--text-header-3);
+  }
+  .text-header-4 {
+    font-size: var(--text-header-4);
+  }
+  .text-header-5 {
+    font-size: var(--text-header-5);
+  }
+  .text-default {
+    font-size: var(--text-default);
+  }
+  .text-default-multiline {
+    font-size: var(--text-default-multiline);
+  }
+  .text-default-chat {
+    font-size: var(--text-default-chat);
+  }
+  .text-medium {
+    font-size: var(--text-medium);
+  }
+  .text-small {
+    font-size: var(--text-small);
+  }
+  .text-code {
+    font-size: var(--text-code);
+  }
+
+  /* Line Heights */
+  .leading-header-0 {
+    line-height: var(--leading-header-0);
+  }
+  .leading-header-1 {
+    line-height: var(--leading-header-1);
+  }
+  .leading-header-2 {
+    line-height: var(--leading-header-2);
+  }
+  .leading-header-3 {
+    line-height: var(--leading-header-3);
+  }
+  .leading-header-4 {
+    line-height: var(--leading-header-4);
+  }
+  .leading-header-5 {
+    line-height: var(--leading-header-5);
+  }
+  .leading-default {
+    line-height: var(--leading-default);
+  }
+  .leading-default-multiline {
+    line-height: var(--leading-default-multiline);
+  }
+  .leading-default-chat {
+    line-height: var(--leading-default-chat);
+  }
+  .leading-medium {
+    line-height: var(--leading-medium);
+  }
+  .leading-small {
+    line-height: var(--leading-small);
+  }
+  .leading-code {
+    line-height: var(--leading-code);
+  }
+
+  /* Font Weights - Fleet Air specific weights */
+  .font-light {
+    font-weight: var(--font-weight-light);
+  }
+  .font-body-regular {
+    font-weight: var(--font-weight-regular);
+  }
+  .font-medium {
+    font-weight: var(--font-weight-medium);
+  }
+  .font-body-semibold {
+    font-weight: var(--font-weight-semibold);
+  }
+  .font-bold {
+    font-weight: var(--font-weight-bold);
+  }
+  .font-code {
+    font-weight: var(--font-weight-code);
+  }
+  .font-code-bold {
+    font-weight: var(--font-weight-code-bold);
+  }
+  .font-header3-regular {
+    font-weight: var(--font-weight-header3-regular);
+  }
+  .font-medium-semibold {
+    font-weight: var(--font-weight-medium-semibold);
+  }
+
+  /* Letter Spacing */
+  .tracking-header-3 {
+    letter-spacing: var(--tracking-header-3);
+  }
+  .tracking-header-4 {
+    letter-spacing: var(--tracking-header-4);
+  }
+  .tracking-header-5 {
+    letter-spacing: var(--tracking-header-5);
+  }
+  .tracking-medium {
+    letter-spacing: var(--tracking-medium);
+  }
+  .tracking-small {
+    letter-spacing: var(--tracking-small);
+  }
+  .tracking-default {
+    letter-spacing: var(--tracking-default);
+  }
+
+  /* Prevent layout shift when font-weight changes on hover/active */
+  .font-shift-safe {
+    text-rendering: optimizeSpeed;
+    font-feature-settings: "kern" 1;
+    font-synthesis: none;
+  }
+
+  /* Fleet Tabs specific semibold weight */
+  .fleet-tab-semibold {
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+/* In-Input Editor Styles - Fleet Design System Integration */
+@layer components {
+
+  /* Fleet-themed prose styles */
+  .prose-fleet {
+    /* Text colors */
+    --tw-prose-body: var(--fleet-text-primary);
+    --tw-prose-headings: var(--fleet-text-primary);
+    --tw-prose-lead: var(--fleet-text-primary);
+    --tw-prose-links: var(--fleet-text-accent);
+    --tw-prose-bold: var(--fleet-text-primary);
+    --tw-prose-counters: var(--fleet-text-secondary);
+    --tw-prose-bullets: var(--fleet-text-secondary);
+    --tw-prose-hr: var(--fleet-border);
+    --tw-prose-quotes: var(--fleet-text-secondary);
+    --tw-prose-quote-borders: var(--fleet-border-focused);
+    --tw-prose-captions: var(--fleet-text-secondary);
+    --tw-prose-code: var(--fleet-text-primary);
+    --tw-prose-pre-code: var(--fleet-text-primary);
+    --tw-prose-pre-bg: transparent;
+    --tw-prose-th-borders: var(--fleet-border);
+    --tw-prose-td-borders: var(--fleet-border);
+
+    /* Invert colors for dark mode */
+    --tw-prose-invert-body: var(--fleet-text-primary);
+    --tw-prose-invert-headings: var(--fleet-text-primary);
+    --tw-prose-invert-lead: var(--fleet-text-primary);
+    --tw-prose-invert-links: var(--fleet-text-accent);
+    --tw-prose-invert-bold: var(--fleet-text-primary);
+    --tw-prose-invert-counters: var(--fleet-text-secondary);
+    --tw-prose-invert-bullets: var(--fleet-text-secondary);
+    --tw-prose-invert-hr: var(--fleet-border);
+    --tw-prose-invert-quotes: var(--fleet-text-secondary);
+    --tw-prose-invert-quote-borders: var(--fleet-border-focused);
+    --tw-prose-invert-captions: var(--fleet-text-secondary);
+    --tw-prose-invert-code: var(--fleet-text-primary);
+    --tw-prose-invert-pre-code: var(--fleet-text-primary);
+    --tw-prose-invert-pre-bg: transparent;
+    --tw-prose-invert-th-borders: var(--fleet-border);
+    --tw-prose-invert-td-borders: var(--fleet-border);
+  }
+
+  /* In-Input Editor specific ProseMirror styles */
+  .ProseMirror {
+    outline: none;
+    font-family: var(--font-inter);
+    font-size: var(--text-default);
+    line-height: var(--leading-default);
+    color: var(--fleet-text-primary);
+  }
+
+  .ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6 {
+    color: var(--fleet-text-primary);
+    font-family: var(--font-inter);
+  }
+
+  .ProseMirror h1 {
+    font-size: var(--text-header-1);
+    line-height: var(--leading-header-1);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .ProseMirror h2 {
+    font-size: var(--text-header-2);
+    line-height: var(--leading-header-2);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .ProseMirror h3 {
+    font-size: var(--text-header-3);
+    line-height: var(--leading-header-3);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .ProseMirror code {
+    background-color: var(--fleet-background-secondary);
+    color: var(--fleet-text-primary);
+    font-family: var(--font-jetbrains-mono);
+    font-size: var(--text-code);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+  }
+
+  .ProseMirror pre {
+    background-color: transparent;
+    color: var(--fleet-text-primary);
+    font-family: var(--font-jetbrains-mono);
+    font-size: var(--text-code);
+    padding: 1rem;
+    border-radius: 0.375rem;
+    overflow-x: auto;
+    border: 1px solid var(--fleet-border);
+  }
+
+  .ProseMirror blockquote {
+    border-left: 4px solid var(--fleet-border-focused);
+    color: var(--fleet-text-secondary);
+    padding-left: 1rem;
+    margin-left: 0;
+  }
+
+  .ProseMirror a {
+    color: var(--fleet-text-accent);
+    text-decoration: underline;
+  }
+
+  .ProseMirror ul, .ProseMirror ol {
+    padding-left: 1.5rem;
+  }
+
+  .ProseMirror li {
+    color: var(--fleet-text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .ProseMirror hr {
+    border: none;
+    border-top: 1px solid var(--fleet-border);
+    margin: 1.5rem 0;
+  }
+
+  /* In-Input Editor placeholder */
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: var(--fleet-text-secondary);
+    pointer-events: none;
+    height: 0;
+  }
+
+  /* In-Input Editor focus */
+  .ProseMirror-focused {
+    outline: none;
+  }
+
+  /* In-Input Editor text selection with Fleet colors */
+  .ProseMirror ::selection {
+    background-color: var(--fleet-inputField-selectionBackground-default) !important;
+    color: var(--fleet-text-primary) !important;
+  }
+
+  .ProseMirror ::-moz-selection {
+    background-color: var(--fleet-inputField-selectionBackground-default) !important;
+    color: var(--fleet-text-primary) !important;
+  }
+
+  /* More specific selectors for In-Input editor content */
+  .ProseMirror p::selection,
+  .ProseMirror h1::selection,
+  .ProseMirror h2::selection,
+  .ProseMirror h3::selection,
+  .ProseMirror span::selection,
+  .ProseMirror strong::selection,
+  .ProseMirror em::selection,
+  .ProseMirror li::selection {
+    background-color: var(--fleet-inputField-selectionBackground-default) !important;
+    color: var(--fleet-text-primary) !important;
+  }
+
+  .ProseMirror p::-moz-selection,
+  .ProseMirror h1::-moz-selection,
+  .ProseMirror h2::-moz-selection,
+  .ProseMirror h3::-moz-selection,
+  .ProseMirror span::-moz-selection,
+  .ProseMirror strong::-moz-selection,
+  .ProseMirror em::-moz-selection,
+  .ProseMirror li::-moz-selection {
+    background-color: var(--fleet-inputField-selectionBackground-default) !important;
+    color: var(--fleet-text-primary) !important;
+  }
+
+  /* Novel Image Resizer styling with Fleet colors */
+  .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.375rem;
+    border: 1px solid var(--fleet-border);
+  }
+
+  .ProseMirror img.ProseMirror-selectednode {
+    border: 2px solid var(--fleet-border-focused);
+    outline: none;
+  }
+
+  /* Image resizer handles */
+  .ProseMirror .resize-cursor {
+    cursor: nw-resize;
+  }
+
+  .ProseMirror .resize-cursor:hover {
+    background-color: var(--fleet-background-hover);
+  }
+
+  /* Syntax highlighting for code blocks with Fleet colors */
+  .ProseMirror .hljs {
+    background-color: transparent !important;
+    color: var(--fleet-text-primary) !important;
+    font-family: var(--font-jetbrains-mono) !important;
+    font-size: var(--text-code) !important;
+    padding: 1rem !important;
+    border-radius: 0.375rem !important;
+    overflow-x: auto !important;
+    border: 1px solid var(--fleet-border) !important;
+  }
+
+  /* Override any code element with hljs classes */
+  .ProseMirror code.hljs,
+  .ProseMirror code.language-typescript,
+  .ProseMirror code[class*="language-"] {
+    background-color: transparent !important;
+  }
+
+  /* Fleet Syntax Highlighting Theme - Using CSS variables for theme support */
+
+  /* Define Fleet syntax highlighting color variables - Light Theme */
+  :root {
+    --fleet-syntax-keyword: #779E9E;    /* Cyan Dark - keywords, types, built-ins */
+    --fleet-syntax-string: #B174D9;     /* Purple_110 - strings, templates */
+    --fleet-syntax-number: #B07203;     /* Yellow_100 - numbers, literals, regex */
+    --fleet-syntax-function: #B07203;   /* Yellow_100 - functions */
+    --fleet-syntax-type: #2A7DEB;       /* Blue_100 - types, classes, interfaces */
+    --fleet-syntax-variable: #685AFB;   /* Violet_90 - variables, properties, attributes */
+    --fleet-syntax-comment: #898E94;    /* Neutral_110 - comments */
+    --fleet-syntax-metadata: #169068;   /* Green_100 - metadata, annotations */
+    --fleet-syntax-constant: #685AFB;   /* Violet_90 - constants */
+    --fleet-syntax-operator: #646B71;   /* Neutral_80 - operators, punctuation */
+    --fleet-syntax-coral: #CC7C8A;      /* Coral - special cases */
+    --fleet-syntax-orange: #E09B70;     /* Orange - special cases */
+  }
+
+  /* Dark theme overrides for syntax highlighting */
+  .dark {
+    --fleet-syntax-keyword: #82D2CE;    /* Cyan - keywords, types, built-ins */
+    --fleet-syntax-string: #E394DC;     /* Pink - strings, templates */
+    --fleet-syntax-number: #EBC88D;     /* Yellow - numbers, literals, regex */
+    --fleet-syntax-function: #EBC88D;   /* Yellow - functions */
+    --fleet-syntax-type: #87C3FF;       /* Blue - types, classes, interfaces */
+    --fleet-syntax-variable: #AF9CFF;   /* Violet - variables, properties, attributes */
+    --fleet-syntax-comment: #FFFFFF85;  /* LightTint_52 - comments */
+    --fleet-syntax-metadata: #A8CC7C;   /* Lime - metadata, annotations */
+    --fleet-syntax-constant: #AF9CFF;   /* Violet - constants */
+    --fleet-syntax-operator: #E0E1E4;   /* Neutral_140 - operators, punctuation */
+    --fleet-syntax-coral: #CC7C8A;      /* Coral - special cases */
+    --fleet-syntax-orange: #E09B70;     /* Orange - special cases */
+  }
+
+  /* Keywords - Fleet uses Cyan */
+  .ProseMirror .hljs-keyword,
+  .ProseMirror .hljs-selector-tag,
+  .ProseMirror .hljs-title,
+  .ProseMirror .hljs-section,
+  .ProseMirror .hljs-doctag,
+  .ProseMirror .hljs-name,
+  .ProseMirror .hljs-strong,
+  .ProseMirror .hljs-type,
+  .ProseMirror .hljs-class,
+  .ProseMirror .hljs-built_in {
+    color: var(--fleet-syntax-keyword);
+  }
+
+  /* Strings - Fleet uses Pink */
+  .ProseMirror .hljs-string,
+  .ProseMirror .hljs-template-string,
+  .ProseMirror .hljs-template-tag,
+  .ProseMirror .hljs-template-variable,
+  .ProseMirror .hljs-attr {
+    color: var(--fleet-syntax-string);
+  }
+
+  /* Numbers - Fleet uses Yellow */
+  .ProseMirror .hljs-number,
+  .ProseMirror .hljs-literal,
+  .ProseMirror .hljs-regexp {
+    color: var(--fleet-syntax-number);
+  }
+
+  /* Functions - Fleet uses Yellow for function calls */
+  .ProseMirror .hljs-title.function_,
+  .ProseMirror .hljs-title.class_,
+  .ProseMirror .hljs-title.class_.inherited__,
+  .ProseMirror .hljs-function,
+  .ProseMirror .hljs-built_in {
+    color: var(--fleet-syntax-function);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  /* Types and Classes - Fleet uses Blue */
+  .ProseMirror .hljs-class,
+  .ProseMirror .hljs-type,
+  .ProseMirror .hljs-interface,
+  .ProseMirror .hljs-enum,
+  .ProseMirror .hljs-struct {
+    color: var(--fleet-syntax-type);
+  }
+
+  /* Variables and Fields - Fleet uses Violet */
+  .ProseMirror .hljs-variable,
+  .ProseMirror .hljs-attribute,
+  .ProseMirror .hljs-property,
+  .ProseMirror .hljs-attr,
+  .ProseMirror .hljs-symbol,
+  .ProseMirror .hljs-bullet {
+    color: var(--fleet-syntax-variable);
+  }
+
+  /* Comments - Fleet uses LightTint_52 (semi-transparent white) */
+  .ProseMirror .hljs-comment,
+  .ProseMirror .hljs-quote,
+  .ProseMirror .hljs-deletion,
+  .ProseMirror .hljs-meta {
+    color: var(--fleet-syntax-comment);
+    font-style: italic;
+  }
+
+  /* Metadata and Annotations - Fleet uses Lime */
+  .ProseMirror .hljs-meta,
+  .ProseMirror .hljs-meta-keyword,
+  .ProseMirror .hljs-meta-string,
+  .ProseMirror .hljs-doctag,
+  .ProseMirror .hljs-tag {
+    color: var(--fleet-syntax-metadata);
+  }
+
+  /* Constants - Fleet uses Violet */
+  .ProseMirror .hljs-constant,
+  .ProseMirror .hljs-builtin-name {
+    color: var(--fleet-syntax-constant);
+  }
+
+  /* Operators and Punctuation - Fleet uses Neutral_140 */
+  .ProseMirror .hljs-operator,
+  .ProseMirror .hljs-punctuation {
+    color: var(--fleet-syntax-operator);
+  }
+
+  /* Special cases */
+  .ProseMirror .hljs-emphasis {
+    font-style: italic;
+  }
+
+  .ProseMirror .hljs-strong {
+    font-weight: var(--font-weight-bold);
+  }
+
+  /* Language-specific overrides */
+
+  /* HTML/XML */
+  .ProseMirror .hljs-tag .hljs-name {
+    color: var(--fleet-syntax-type); /* Blue - HTML tag names */
+  }
+
+  .ProseMirror .hljs-tag .hljs-attr {
+    color: var(--fleet-syntax-variable); /* Violet - HTML attributes */
+  }
+
+  .ProseMirror .hljs-tag .hljs-string {
+    color: var(--fleet-syntax-string); /* Pink - HTML attribute values */
+  }
+
+  /* CSS */
+  .ProseMirror .hljs-selector-class,
+  .ProseMirror .hljs-selector-id,
+  .ProseMirror .hljs-selector-pseudo {
+    color: var(--fleet-syntax-variable); /* Violet - CSS selectors */
+  }
+
+  .ProseMirror .hljs-attribute {
+    color: var(--fleet-syntax-keyword); /* Cyan - CSS properties */
+  }
+
+  /* JavaScript/TypeScript */
+  .ProseMirror .hljs-params {
+    color: var(--fleet-syntax-metadata); /* Lime - function parameters */
+  }
+
+  /* JSON */
+  .ProseMirror .hljs-attr {
+    color: var(--fleet-syntax-variable); /* Violet - JSON keys */
+  }
+
+  /* Markdown */
+  .ProseMirror .hljs-title {
+    color: var(--fleet-syntax-function); /* Yellow - Markdown headings */
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .ProseMirror .hljs-link {
+    color: var(--fleet-syntax-type); /* Blue - Markdown links */
+  }
+
+  .ProseMirror .hljs-code {
+    color: var(--fleet-syntax-string); /* Pink - Markdown code */
+  }
+
+  /* ── Prism syntax highlighting → Air syntax tokens ── */
+
+  .token.keyword,
+  .token.builtin,
+  .token.tag,
+  .token.bold {
+    color: var(--fleet-syntax-keyword);
+  }
+
+  .token.string,
+  .token.template-string,
+  .token.attr-value {
+    color: var(--fleet-syntax-string);
+  }
+
+  .token.number,
+  .token.regex {
+    color: var(--fleet-syntax-number);
+  }
+
+  .token.function,
+  .token.class-name {
+    color: var(--fleet-syntax-function);
+  }
+
+  .token.property,
+  .token.attr-name {
+    color: var(--fleet-syntax-variable);
+  }
+
+  .token.comment,
+  .token.prolog,
+  .token.doctype,
+  .token.cdata {
+    color: var(--fleet-syntax-comment);
+    font-style: italic;
+  }
+
+  .token.decorator,
+  .token.annotation {
+    color: var(--fleet-syntax-metadata);
+  }
+
+  .token.constant,
+  .token.boolean {
+    color: var(--fleet-syntax-constant);
+  }
+
+  .token.operator,
+  .token.punctuation {
+    color: var(--fleet-syntax-operator);
+  }
+
+  /* Todo list checkbox alignment fixes */
+  .ProseMirror li[data-checked] > label {
+    margin-top: 0.125rem;
+  }
+
+  .ProseMirror li[data-checked] > div > p {
+    margin: 0;
+  }
+
+  /* In-Input Editor block spacing overrides */
+  .ProseMirror h1,
+  .ProseMirror h2,
+  .ProseMirror h3 {
+    margin-bottom: 1rem !important;
+    margin-top: 1.5rem !important;
+  }
+
+  .ProseMirror h1:first-child,
+  .ProseMirror h2:first-child,
+  .ProseMirror h3:first-child {
+    margin-top: 0 !important;
+  }
+
+  .ProseMirror p {
+    margin-bottom: 1rem !important;
+    margin-top: 0 !important;
+  }
+
+  .ProseMirror ul,
+  .ProseMirror ol {
+    margin-bottom: 1rem !important;
+    margin-top: 0 !important;
+  }
+
+  .ProseMirror li {
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .ProseMirror ul[data-type="taskList"] li,
+  .ProseMirror li[data-type="taskItem"] {
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Remove paragraph margins inside list items */
+  .ProseMirror li p {
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .ProseMirror ul[data-type="taskList"] li p,
+  .ProseMirror li[data-type="taskItem"] p {
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .ProseMirror blockquote {
+    margin-bottom: 1rem !important;
+    margin-top: 0 !important;
+  }
+
+  .ProseMirror pre {
+    margin-bottom: 1rem !important;
+    margin-top: 0 !important;
+  }
+
+  .ProseMirror hr {
+    margin-bottom: 1.5rem !important;
+    margin-top: 1.5rem !important;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -100% 0; }
+}
+
