@@ -1108,7 +1108,14 @@ function getStepStatus(step: HighLevelStep, state: SetupState): "done" | "in-pro
   return "todo"
 }
 
-function ProgressTabContent({ state }: { state: SetupState }) {
+function ProgressTabContent({ state, prCreated, envConfigChoice }: { state: SetupState; prCreated: boolean; envConfigChoice: "continue" | "create_pr" | null }) {
+  // Dynamically filter steps based on the path the user took
+  const skippedAgentOpt = envConfigChoice === "create_pr" || (prCreated && !["AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(state))
+  const steps = skippedAgentOpt
+    ? HIGH_LEVEL_STEPS.filter(s => s.title !== "Agent optimization")
+    : HIGH_LEVEL_STEPS
+  console.log("[ProgressTabContent]", { state, prCreated, envConfigChoice, skippedAgentOpt, stepCount: steps.length })
+
   return (
     <div className="p-4 space-y-4">
       <div>
@@ -1119,16 +1126,23 @@ function ProgressTabContent({ state }: { state: SetupState }) {
       </div>
       <div className="space-y-0.5">
         {(() => {
-          const statuses = HIGH_LEVEL_STEPS.map(s => getStepStatus(s, state))
+          const statuses = steps.map(s => getStepStatus(s, state))
           const anyInProgress = statuses.includes("in-progress")
           const allDone = statuses.every(s => s === "done")
           const waitingStates: SetupState[] = ["ENV_CONFIG_READY", "COMPLETION_ACTIONS", "AGENT_OPT_REPORT_READY", "AGENT_OPT_COMPLETE"]
+
+          // When PR is created, mark all remaining todo steps as done
+          if (prCreated) {
+            for (let i = 0; i < statuses.length; i++) {
+              if (statuses[i] === "todo") statuses[i] = "done"
+            }
+          }
           // If no step is in-progress, not all done, and not waiting for user choice, highlight the last done step
-          if (!anyInProgress && !allDone && !waitingStates.includes(state)) {
+          else if (!anyInProgress && !allDone && !waitingStates.includes(state)) {
             const lastDoneIdx = statuses.lastIndexOf("done")
             if (lastDoneIdx >= 0) statuses[lastDoneIdx] = "in-progress"
           }
-          return HIGH_LEVEL_STEPS.map((step, i) => {
+          return steps.map((step, i) => {
             const status = statuses[i]
             const hint = status === "in-progress"
               ? `${step.description} · ${step.estimate}`
@@ -1139,7 +1153,7 @@ function ProgressTabContent({ state }: { state: SetupState }) {
                 title={step.title}
                 hint={hint}
                 status={status}
-                isLast={i === HIGH_LEVEL_STEPS.length - 1}
+                isLast={i === steps.length - 1}
               />
             )
           })
@@ -1831,7 +1845,7 @@ export default function ProjectSetupPage() {
                   </TabBar>
                   <TabContentArea>
                     <TabsContent value="progress" className="h-full m-0 overflow-auto">
-                      <ProgressTabContent state={st.state} />
+                      <ProgressTabContent state={st.state} prCreated={st.prCreated} envConfigChoice={st.envConfigChoice} />
                     </TabsContent>
                     <TabsContent value="secrets" className="h-full m-0 overflow-auto">
                       <SecretsForm appSecrets={st.secrets} appSecretValues={st.secretValues} onAddSecret={onAddSecret} />
