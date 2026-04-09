@@ -19,8 +19,8 @@ function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.V
   return <SelectPrimitive.Value {...props} />
 }
 
-type SelectTriggerSize = "default" | "lg"
-type SelectTriggerVariant = "default" | "inline"
+export type SelectTriggerSize = "default" | "lg"
+export type SelectTriggerVariant = "default" | "inline"
 
 const selectTriggerSizes: Record<SelectTriggerSize, string> = {
   // 24px — matches Figma select/field padding: 2px top/bottom, 6px left, 2px right
