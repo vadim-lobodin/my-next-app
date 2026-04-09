@@ -38,6 +38,7 @@ import {
   InputQuestionWidget,
   List,
   ListItem,
+  AirSelect,
   type ProgressSubstepStatus,
   type ChatMessage as UIChatMessage,
 } from "@/components/ui"
@@ -1326,11 +1327,7 @@ function PRModal({ st, onClose, onCreatePr }: { st: AppState; onClose: () => voi
           </div>
           <div>
             <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Branch</label>
-            <TextInput value="cloud-env-setup" readOnly />
-          </div>
-          <div>
-            <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Base</label>
-            <TextInput value="main" readOnly />
+            <AirSelect value="cloud-env-setup" options={[{ value: "cloud-env-setup", label: "cloud-env-setup" }, { value: "main", label: "main" }]} />
           </div>
         </div>
         <DialogFooter>
