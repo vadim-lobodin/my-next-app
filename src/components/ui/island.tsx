@@ -326,7 +326,7 @@ const ChatIsland = React.forwardRef<HTMLDivElement, ChatIslandProps>(
       >
         {/* Messages area - scrollable, grows to fill space */}
         <div className="flex-1 min-h-0 overflow-hidden relative">
-          <div className="absolute top-0 left-0 right-0 h-8 z-10 pointer-events-none" style={{ background: "linear-gradient(to bottom, var(--fleet-island-background), transparent)" }} />
+          <div className="absolute top-0 left-0 right-0 h-4 z-10 pointer-events-none" style={{ background: "linear-gradient(to bottom, var(--fleet-island-background), transparent)" }} />
           <ScrollArea className="h-full w-full">
             <div className="flex flex-col gap-3 p-3 max-w-[600px] mx-auto">
               {messages.map((msg) => (
