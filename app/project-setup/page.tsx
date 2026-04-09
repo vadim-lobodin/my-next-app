@@ -1311,23 +1311,23 @@ function PRModal({ st, onClose, onCreatePr }: { st: AppState; onClose: () => voi
 
   return (
     <DialogRoot open onOpenChange={(open: boolean) => { if (!open) onClose() }}>
-      <DialogContent className="max-w-[440px]" onClose={onClose}>
+      <DialogContent className="max-w-[440px] !gap-4 !p-4" onClose={onClose}>
         <DialogHeader>
           <DialogTitle>Create pull request</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div>
             <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Title</label>
             <TextInput value={prTitle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrTitle(e.target.value)} />
           </div>
           <div>
             <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Description</label>
-            <Textarea value={prDesc} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPrDesc(e.target.value)} rows={4} resize="none" />
+            <Textarea value={prDesc} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPrDesc(e.target.value)} rows={3} resize="none" />
           </div>
           <div>
-            <label className="block text-[12px] mb-2" style={{ color: "var(--fleet-text-secondary)" }}>Included in this PR</label>
+            <label className="block text-[12px] mb-1.5" style={{ color: "var(--fleet-text-secondary)" }}>Included in this PR</label>
             <div className="space-y-1">
-              <Checkbox label="Environment configuration" checked disabled />
+              <Checkbox label="Environment configuration generated" checked disabled />
               <Checkbox label="Validation run completed" checked disabled />
               <Checkbox label="Test command validated" checked={st.validationLevel === "FULL"} disabled />
               {hasOpt && <Checkbox label="Agent optimization applied" checked disabled />}
