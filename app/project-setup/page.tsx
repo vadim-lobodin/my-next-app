@@ -1743,8 +1743,11 @@ function ResizeHandle() {
 type View = "splash" | "setup"
 
 export default function ProjectSetupPage() {
-  const [view, setView] = useState<View>("splash")
+  const [view, setView] = useState<View>("setup")
   const { state: st, onStart, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, reset, setDetailsPanelOpen, setPrModalOpen, setOptimizationPanelOpen, onCreatePr } = useSetupFlow()
+
+  const startedRef = useRef(false)
+  useEffect(() => { if (!startedRef.current) { startedRef.current = true; onStart() } }, [])
 
   const handleSplashStart = () => { setView("setup"); onStart() }
   const handleSplashCancel = () => { reset(); setView("splash") }
