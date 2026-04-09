@@ -1325,13 +1325,12 @@ function PRModal({ st, onClose, onCreatePr }: { st: AppState; onClose: () => voi
             <Textarea value={prDesc} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPrDesc(e.target.value)} rows={3} resize="none" />
           </div>
           <div>
-            <label className="block text-[12px] mb-1.5" style={{ color: "var(--fleet-text-secondary)" }}>Included in this PR</label>
-            <div className="space-y-1">
-              <Checkbox label="Environment configuration generated" checked disabled />
-              <Checkbox label="Validation run completed" checked disabled />
-              <Checkbox label="Test command validated" checked={st.validationLevel === "FULL"} disabled />
-              {hasOpt && <Checkbox label="Agent optimization applied" checked disabled />}
-            </div>
+            <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Branch</label>
+            <TextInput value="cloud-env-setup" readOnly />
+          </div>
+          <div>
+            <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Base</label>
+            <TextInput value="main" readOnly />
           </div>
         </div>
         <DialogFooter>
