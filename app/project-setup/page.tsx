@@ -1122,8 +1122,9 @@ function ProgressTabContent({ state }: { state: SetupState }) {
           const statuses = HIGH_LEVEL_STEPS.map(s => getStepStatus(s, state))
           const anyInProgress = statuses.includes("in-progress")
           const allDone = statuses.every(s => s === "done")
-          // If no step is in-progress and not all done, treat the last done step as in-progress
-          if (!anyInProgress && !allDone) {
+          const waitingStates: SetupState[] = ["ENV_CONFIG_READY", "COMPLETION_ACTIONS", "AGENT_OPT_REPORT_READY", "AGENT_OPT_COMPLETE"]
+          // If no step is in-progress, not all done, and not waiting for user choice, highlight the last done step
+          if (!anyInProgress && !allDone && !waitingStates.includes(state)) {
             const lastDoneIdx = statuses.lastIndexOf("done")
             if (lastDoneIdx >= 0) statuses[lastDoneIdx] = "in-progress"
           }
