@@ -1122,8 +1122,6 @@ function ProgressTabContent({ state, prCreated, envConfigChoice }: { state: Setu
         <Typography variant="default" as="p" className="mt-1" style={{ color: "var(--fleet-text-secondary)" }}>
           Preparing this repository so cloud agents can install, build, and test reliably.
         </Typography>
-        {/* DEBUG: remove after testing */}
-        <div style={{ fontSize: 10, color: "red" }}>state={state} pr={String(prCreated)} env={String(envConfigChoice)} skip={String(skippedAgentOpt)} steps={steps.length}</div>
       </div>
       <div className="space-y-0.5">
         {(() => {
@@ -1490,8 +1488,8 @@ function useExecutionMessages({ st, onAddSecret, onSkipTests, onEnvConfigChoice,
     else pushAssistant(msg.text)
   }
 
-  // Resumed run box
-  if (showResumedBox) {
+  // Resumed run box (skip if test was skipped — no validation to show)
+  if (showResumedBox && st.testOutcome !== "skipped") {
     pushAssistant(
       <ActivityBox title="Validate test command" doneLabel="Test command validated" lines={setupActivityLines} summary={COMPLETED_STATES.includes(st.state) ? "Test command validated" : setupSummary} expanded={resumedExpanded} onToggle={() => setResumedBoxUserExpanded(e => !e)} collapsedSecondaryLine={COMPLETED_STATES.includes(st.state) || POST_SETUP_CONFIG_STATES.includes(st.state) ? `Completed in ${RESUMED_RUN_DURATION_SECONDS} seconds` : "Validating test command (npm test)"} />
     )
