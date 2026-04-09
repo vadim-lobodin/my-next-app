@@ -27,7 +27,7 @@ export default function Home() {
           className="flex items-center gap-3 p-4 rounded-[var(--fleet-radius-lg)] transition-colors"
           style={{ background: "var(--fleet-island-background)" }}
         >
-          <Icon fleet="toolwindow-project" size="md" />
+          <Icon fleet="project" size="md" />
           <div>
             <Typography variant="default-semibold">Projects Workspace</Typography>
             <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>
@@ -40,7 +40,7 @@ export default function Home() {
           className="flex items-center gap-3 p-4 rounded-[var(--fleet-radius-lg)] transition-colors"
           style={{ background: "var(--fleet-island-background)" }}
         >
-          <Icon fleet="toolwindow-build" size="md" />
+          <Icon fleet="ai-new-project" size="md" />
           <div>
             <Typography variant="default-semibold">Project Setup Agent</Typography>
             <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>

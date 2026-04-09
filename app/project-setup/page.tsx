@@ -29,6 +29,8 @@ import {
   AiMessage,
   UserMessage,
   SystemMessage,
+  ProgressMessage,
+  type ProgressSubstepStatus,
 } from "@/components/ui"
 
 // ============================================================================
@@ -611,64 +613,43 @@ const CUSTOM_CSS = `
 // Inline Sub-Components
 // ============================================================================
 
-function StatusIcon({ status }: { status: ActivityLineStatus }) {
-  if (status === "success") return <Icon fleet="task-completed" size="sm" className="text-[var(--fleet-green)]" />
-  if (status === "running") return <Icon fleet="progress" size="sm" className="animate-spin text-[var(--fleet-blue)]" />
-  if (status === "blocked") return <Icon lucide="CircleX" size="sm" className="shrink-0" style={{ color: "#f87c88" }} />
-  if (status === "skipped") return <Icon fleet="task-draft" size="sm" className="text-[var(--fleet-text-secondary)]" />
-  // pending
-  return <Icon fleet="task-draft" size="sm" className="text-[var(--fleet-text-secondary)]" />
+const activityToSubstepStatus: Record<ActivityLineStatus, ProgressSubstepStatus> = {
+  success: "success",
+  running: "running",
+  blocked: "error",
+  skipped: "skipped",
+  pending: "pending",
 }
 
-function ActivityBox({ title = "Activity", lines, summary, expanded: controlledExpanded, thinking, onToggle, collapsedSecondaryLine, failed = false }: {
-  title?: string; lines: ActivityLine[]; summary: string; expanded?: boolean; thinking?: boolean; onToggle?: () => void; collapsedSecondaryLine?: string; failed?: boolean
+function ActivityBox({ title = "Activity", doneLabel, lines, summary, expanded: controlledExpanded, thinking, onToggle, collapsedSecondaryLine, failed = false }: {
+  title?: string; doneLabel?: string; lines: ActivityLine[]; summary: string; expanded?: boolean; thinking?: boolean; onToggle?: () => void; collapsedSecondaryLine?: string; failed?: boolean
 }) {
   const [internalExpanded, setInternalExpanded] = useState(true)
   const expanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded
   const handleToggle = onToggle ?? (controlledExpanded === undefined ? () => setInternalExpanded((e) => !e) : undefined)
   const isEmpty = lines.length === 0 && !thinking
   if (isEmpty && !summary) return null
-  const hasContent = lines.length > 0 || thinking
-  const showCollapsedLine = !expanded && collapsedSecondaryLine
-  const showFailedStyle = failed && !expanded
+
+  const substeps = [
+    ...lines.map(line => ({
+      label: line.label,
+      status: activityToSubstepStatus[line.status ?? "pending"],
+    })),
+    ...(thinking ? [{ label: "Thinking…", status: "running" as ProgressSubstepStatus }] : []),
+  ]
+
+  const allDone = lines.length > 0 && !thinking && lines.every(l => l.status === "success" || l.status === "skipped")
+  const hasFailed = failed || lines.some(l => l.status === "blocked")
+  const type = hasFailed ? "failed" : allDone ? "done" : "loader"
 
   return (
-    <div className={`rounded-[12px] border overflow-hidden transition-colors ${showFailedStyle ? "border-[var(--fleet-git-text-deleted,#f87c88)] bg-[rgba(248,124,136,0.05)]" : "border-[var(--fleet-tileButton-off-border-default)] bg-[var(--fleet-tileButton-off-background-default)]"}`}>
-      <button type="button" onClick={handleToggle ?? undefined} className="w-full flex items-start justify-between px-3 py-2 text-left hover:bg-[var(--fleet-tileButton-off-background-hovered)] transition-colors">
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <span className="text-[13px] font-medium" style={{ color: "var(--fleet-text-primary)" }}>{title}</span>
-          {!expanded && summary && (
-            <span className={`text-[13px] truncate ${showFailedStyle ? "" : ""}`} style={{ color: showFailedStyle ? "#f87c88" : "var(--fleet-text-secondary)" }}>{summary}</span>
-          )}
-        </div>
-        <span className="flex items-center gap-2 shrink-0 pt-0.5">
-          {!expanded && collapsedSecondaryLine && (
-            <span className="text-[13px]" style={{ color: "var(--fleet-text-secondary)" }}>{collapsedSecondaryLine.replace(/Thought for /, "").replace(/Completed in /, "").replace(/Ran for /, "").replace(/ seconds?/, "s")}</span>
-          )}
-          <Icon lucide="ChevronDown" size="xs" className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
-        </span>
-      </button>
-      <div className="grid transition-[grid-template-rows] duration-300 ease-in-out" style={{ gridTemplateRows: expanded && hasContent ? "1fr" : "0fr" }}>
-        <div className="overflow-hidden min-h-0">
-          <div className="border-t px-3 py-2" style={{ borderColor: "var(--fleet-tileButton-off-border-default)" }}>
-            <ul className="space-y-1">
-              {lines.map((line, i) => (
-                <li key={i} className="flex items-center gap-2 text-[13px]" style={{ color: "var(--fleet-text-primary)" }}>
-                  <StatusIcon status={line.status ?? "pending"} />
-                  <span style={line.status === "blocked" ? { color: "#f87c88" } : undefined}>{line.label}</span>
-                </li>
-              ))}
-              {thinking && (
-                <li className="flex items-center gap-2 text-[13px]" style={{ color: "var(--fleet-text-primary)" }}>
-                  <Icon fleet="progress" size="sm" className="animate-spin text-[var(--fleet-blue)]" />
-                  Thinking…
-                </li>
-              )}
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ProgressMessage
+      type={type}
+      label={allDone && doneLabel ? doneLabel : title}
+      substeps={substeps}
+      expanded={expanded}
+      onToggleExpand={handleToggle}
+    />
   )
 }
 
@@ -1226,7 +1207,7 @@ function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOpti
         {/* Analysis activity box */}
         {showAnalysisBox && (
           <div className="animate-chat-in">
-            <ActivityBox title="Exploring the project" lines={st.activityTimeline} summary={analysisSummary} expanded={analysisExpanded} onToggle={() => setAnalysisBoxUserExpanded(e => !e)} thinking={st.agentThinking && st.state === "RUN_ANALYSIS"} collapsedSecondaryLine={hasPlanMessage ? `Thought for ${ANALYSIS_DURATION_SECONDS} seconds` : st.agentThinking && st.state === "RUN_ANALYSIS" && st.activityTimeline.length > 0 ? st.activityTimeline[st.activityTimeline.length - 1]?.label ?? "Exploring project…" : st.activityTimeline.length > 0 ? st.activityTimeline[st.activityTimeline.length - 1]?.label : undefined} />
+            <ActivityBox title="Exploring the project" doneLabel="Explored the project" lines={st.activityTimeline} summary={analysisSummary} expanded={analysisExpanded} onToggle={() => setAnalysisBoxUserExpanded(e => !e)} thinking={st.agentThinking && st.state === "RUN_ANALYSIS"} collapsedSecondaryLine={hasPlanMessage ? `Thought for ${ANALYSIS_DURATION_SECONDS} seconds` : st.agentThinking && st.state === "RUN_ANALYSIS" && st.activityTimeline.length > 0 ? st.activityTimeline[st.activityTimeline.length - 1]?.label ?? "Exploring project…" : st.activityTimeline.length > 0 ? st.activityTimeline[st.activityTimeline.length - 1]?.label : undefined} />
           </div>
         )}
 
@@ -1235,14 +1216,14 @@ function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOpti
         {/* Setup run box (no snapshot) */}
         {showSetupBox && !hasFrozenRun && (
           <div className="animate-chat-in">
-            <ActivityBox title="Setup run" lines={setupActivityLines} summary={setupSummary} expanded={setupExpanded} onToggle={() => setSetupBoxUserExpanded(e => !e)} failed={st.state === "BLOCKED_DATABASE_URL" || st.state === "BLOCKED_NPM_TOKEN"} collapsedSecondaryLine={["GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS"].includes(st.state) ? `Completed in ${SETUP_RUN_DURATION_SECONDS} seconds` : st.state === "BLOCKED_DATABASE_URL" ? `Ran for ${SETUP_RUN_DURATION_SECONDS} seconds` : st.state === "BLOCKED_NPM_TOKEN" ? `Ran for ${SETUP_DURATION_BEFORE_INSTALL_FAILURE_SECONDS} seconds` : getCurrentSetupStepLabel(st.setupSteps)} />
+            <ActivityBox title="Setup run" doneLabel="Setup complete" lines={setupActivityLines} summary={setupSummary} expanded={setupExpanded} onToggle={() => setSetupBoxUserExpanded(e => !e)} failed={st.state === "BLOCKED_DATABASE_URL" || st.state === "BLOCKED_NPM_TOKEN"} collapsedSecondaryLine={["GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS"].includes(st.state) ? `Completed in ${SETUP_RUN_DURATION_SECONDS} seconds` : st.state === "BLOCKED_DATABASE_URL" ? `Ran for ${SETUP_RUN_DURATION_SECONDS} seconds` : st.state === "BLOCKED_NPM_TOKEN" ? `Ran for ${SETUP_DURATION_BEFORE_INSTALL_FAILURE_SECONDS} seconds` : getCurrentSetupStepLabel(st.setupSteps)} />
           </div>
         )}
 
         {/* Frozen first run */}
         {showSetupBox && hasFrozenRun && (
           <div className="animate-chat-in">
-            <ActivityBox title="Setup run" lines={frozenLines} summary="Test command requires DATABASE_URL" expanded={frozenExpanded} onToggle={() => setFrozenSetupBoxUserExpanded(e => !e)} failed collapsedSecondaryLine={`Ran for ${SETUP_RUN_DURATION_SECONDS} seconds`} />
+            <ActivityBox title="Setup run" doneLabel="Setup complete" lines={frozenLines} summary="Test command requires DATABASE_URL" expanded={frozenExpanded} onToggle={() => setFrozenSetupBoxUserExpanded(e => !e)} failed collapsedSecondaryLine={`Ran for ${SETUP_RUN_DURATION_SECONDS} seconds`} />
           </div>
         )}
 
@@ -1273,7 +1254,7 @@ function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOpti
         {/* Resumed run box */}
         {showResumedBox && (
           <div className="animate-chat-in" style={{ ["--chat-in-delay" as string]: `${2 * STAGGER_MS}ms` }}>
-            <ActivityBox title="Validate test command" lines={setupActivityLines} summary={COMPLETED_STATES.includes(st.state) ? "Test command validated" : setupSummary} expanded={resumedExpanded} onToggle={() => setResumedBoxUserExpanded(e => !e)} collapsedSecondaryLine={COMPLETED_STATES.includes(st.state) || POST_SETUP_CONFIG_STATES.includes(st.state) ? `Completed in ${RESUMED_RUN_DURATION_SECONDS} seconds` : "Validating test command (npm test)"} />
+            <ActivityBox title="Validate test command" doneLabel="Test command validated" lines={setupActivityLines} summary={COMPLETED_STATES.includes(st.state) ? "Test command validated" : setupSummary} expanded={resumedExpanded} onToggle={() => setResumedBoxUserExpanded(e => !e)} collapsedSecondaryLine={COMPLETED_STATES.includes(st.state) || POST_SETUP_CONFIG_STATES.includes(st.state) ? `Completed in ${RESUMED_RUN_DURATION_SECONDS} seconds` : "Validating test command (npm test)"} />
           </div>
         )}
 
@@ -1291,7 +1272,7 @@ function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOpti
             <div key={msg.id} className="animate-chat-in space-y-6" style={{ ["--chat-in-delay" as string]: `${i * STAGGER_MS}ms` }}>
               <MessageBubble message={msg} />
               {i === firstSystemIdx && showCaptureBox && st.captureConfigLines.length > 0 && (
-                <ActivityBox title="Capturing environment configuration" lines={st.captureConfigLines} summary={isCompleted ? "Completed" : "Capturing…"} expanded={configCaptureExpanded} onToggle={() => setConfigCaptureBoxUserExpanded(e => !e)} collapsedSecondaryLine={isCompleted ? `Completed in ${CAPTURE_CONFIG_DURATION_SECONDS} seconds` : undefined} />
+                <ActivityBox title="Capturing environment configuration" doneLabel="Captured environment configuration" lines={st.captureConfigLines} summary={isCompleted ? "Completed" : "Capturing…"} expanded={configCaptureExpanded} onToggle={() => setConfigCaptureBoxUserExpanded(e => !e)} collapsedSecondaryLine={isCompleted ? `Completed in ${CAPTURE_CONFIG_DURATION_SECONDS} seconds` : undefined} />
               )}
             </div>
           ))
@@ -1321,7 +1302,7 @@ function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOpti
           const done = ["AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state)
           return (
             <section className="animate-chat-in">
-              <ActivityBox title="Analyzing repository for agent optimization" lines={st.optimizationAnalysisLines} summary={done ? "Completed" : "Analyzing…"} expanded={optimizationAnalysisExpanded} onToggle={() => setOptimizationAnalysisBoxUserExpanded(e => !e)} collapsedSecondaryLine={done ? `Completed in ${OPTIMIZATION_ANALYSIS_DURATION_SECONDS} seconds` : undefined} />
+              <ActivityBox title="Analyzing repository for agent optimization" doneLabel="Analyzed repository for agent optimization" lines={st.optimizationAnalysisLines} summary={done ? "Completed" : "Analyzing…"} expanded={optimizationAnalysisExpanded} onToggle={() => setOptimizationAnalysisBoxUserExpanded(e => !e)} collapsedSecondaryLine={done ? `Completed in ${OPTIMIZATION_ANALYSIS_DURATION_SECONDS} seconds` : undefined} />
             </section>
           )
         })()}
@@ -1358,7 +1339,7 @@ function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOpti
           const done = st.state === "AGENT_OPT_COMPLETE"
           return (
             <section className="animate-chat-in">
-              <ActivityBox title="Applying auto-fixes" lines={st.optimizationApplyingLines} summary={done ? "Completed" : "Applying…"} expanded={optimizationApplyingExpanded} onToggle={() => setOptimizationApplyingBoxUserExpanded(e => !e)} collapsedSecondaryLine={done ? `Completed in ${OPTIMIZATION_APPLYING_DURATION_SECONDS} seconds` : undefined} />
+              <ActivityBox title="Applying auto-fixes" doneLabel="Applied auto-fixes" lines={st.optimizationApplyingLines} summary={done ? "Completed" : "Applying…"} expanded={optimizationApplyingExpanded} onToggle={() => setOptimizationApplyingBoxUserExpanded(e => !e)} collapsedSecondaryLine={done ? `Completed in ${OPTIMIZATION_APPLYING_DURATION_SECONDS} seconds` : undefined} />
             </section>
           )
         })()}
