@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useReducer, useRef, useState } from "react"
+import React, { useCallback, useEffect, useReducer, useRef, useState } from "react"
 import {
   AppToolbar,
   Typography,
@@ -30,8 +30,18 @@ import {
   UserMessage,
   SystemMessage,
   ProgressMessage,
+  ChatIsland,
+  IslandWithTabs,
+  TabBar,
+  TabContentArea,
+  QuestionWidget,
+  InputQuestionWidget,
+  List,
+  ListItem,
   type ProgressSubstepStatus,
+  type ChatMessage as UIChatMessage,
 } from "@/components/ui"
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 
 // ============================================================================
 // Types
@@ -218,7 +228,7 @@ function cloneSteps(steps: SetupStep[], updates: Partial<SetupStep>[]): SetupSte
 function delay(ms: number): Promise<void> { return new Promise((r) => setTimeout(r, ms)) }
 
 const TIMINGS = {
-  analysisLine: 400, buildEnv: 750, install: 1800, build: 950, test: 1200,
+  analysisLine: 800, buildEnv: 750, install: 1800, build: 950, test: 1200,
   testRetry: 600, configWrite: 600, resumeAfterAckMs: 750, testRunDurationMs: 2000,
   completionPauseMs: 500, configCaptureNarrativeDelayMs: 650, configCaptureDurationMs: 2000,
   configConfirmationDelayMs: 750,
@@ -289,7 +299,7 @@ const OPTIMIZATION_APPLYING_LINES = [
 const OPTIMIZATION_TIMINGS = {
   analysisStepMin: 700, analysisStepMax: 1200,
   applyStepMin: 900, applyStepMax: 1600,
-  afterAnalysisDelayMs: 750, afterApplyChoiceDelayMs: 450, afterApplyingDelayMs: 1000,
+  afterAnalysisDelayMs: 300, afterApplyChoiceDelayMs: 450, afterApplyingDelayMs: 1000,
 } as const
 
 const OPTIMIZATION_ANALYSIS_DURATION_SECONDS = Math.round(
@@ -602,12 +612,46 @@ const CUSTOM_CSS = `
 .animate-chat-in-delay-1 { --chat-in-delay: 0.1s; }
 .animate-chat-in-delay-2 { --chat-in-delay: 0.2s; }
 .animate-chat-in-delay-3 { --chat-in-delay: 0.3s; }
+@keyframes slide-up-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up-in 0.25s ease-out forwards;
+}
 .recommended-card-glow {
   box-shadow: 0 0 0 1px rgb(59 130 246 / 0.3), 0 0 20px rgb(59 130 246 / 0.15);
 }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 `
+
+// ============================================================================
+// Stream Text Effect
+// ============================================================================
+
+function StreamText({ text, speed = 20, onComplete }: { text: string; speed?: number; onComplete?: () => void }) {
+  const words = text.split(/(\s+)/)
+  const [visibleCount, setVisibleCount] = useState(0)
+  const completeRef = useRef(false)
+
+  useEffect(() => {
+    if (visibleCount >= words.length) {
+      if (!completeRef.current) { completeRef.current = true; onComplete?.() }
+      return
+    }
+    const timer = setTimeout(() => {
+      setVisibleCount((c) => Math.min(c + 2, words.length))
+    }, speed)
+    return () => clearTimeout(timer)
+  }, [visibleCount, words.length, speed, onComplete])
+
+  return (
+    <Typography variant="default-chat" style={{ color: "var(--fleet-text-primary)" }}>
+      {words.slice(0, visibleCount).join("")}
+    </Typography>
+  )
+}
 
 // ============================================================================
 // Inline Sub-Components
@@ -621,10 +665,10 @@ const activityToSubstepStatus: Record<ActivityLineStatus, ProgressSubstepStatus>
   pending: "pending",
 }
 
-function ActivityBox({ title = "Activity", doneLabel, lines, summary, expanded: controlledExpanded, thinking, onToggle, collapsedSecondaryLine, failed = false }: {
-  title?: string; doneLabel?: string; lines: ActivityLine[]; summary: string; expanded?: boolean; thinking?: boolean; onToggle?: () => void; collapsedSecondaryLine?: string; failed?: boolean
+function ActivityBox({ title = "Activity", doneLabel, failedLabel, lines, summary, expanded: controlledExpanded, thinking, onToggle, collapsedSecondaryLine, failed = false }: {
+  title?: string; doneLabel?: string; failedLabel?: string; lines: ActivityLine[]; summary: string; expanded?: boolean; thinking?: boolean; onToggle?: () => void; collapsedSecondaryLine?: string; failed?: boolean
 }) {
-  const [internalExpanded, setInternalExpanded] = useState(true)
+  const [internalExpanded, setInternalExpanded] = useState(false)
   const expanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded
   const handleToggle = onToggle ?? (controlledExpanded === undefined ? () => setInternalExpanded((e) => !e) : undefined)
   const isEmpty = lines.length === 0 && !thinking
@@ -642,10 +686,12 @@ function ActivityBox({ title = "Activity", doneLabel, lines, summary, expanded: 
   const hasFailed = failed || lines.some(l => l.status === "blocked")
   const type = hasFailed ? "failed" : allDone ? "done" : "loader"
 
+  const label = hasFailed && failedLabel ? failedLabel : allDone && doneLabel ? doneLabel : title
+
   return (
     <ProgressMessage
       type={type}
-      label={allDone && doneLabel ? doneLabel : title}
+      label={label}
       substeps={substeps}
       expanded={expanded}
       onToggleExpand={handleToggle}
@@ -694,54 +740,95 @@ function ChoiceCard({ recommended, title, description, onClick }: { recommended?
   )
 }
 
-function ConfigRequiredBlock({ onAddSecret, onSkipTests }: { onAddSecret: (value: string) => void; onSkipTests: () => void }) {
-  const [choice, setChoice] = useState<"add" | "skip" | null>(null)
-  const [inputOpen, setInputOpen] = useState(false)
-  const [inputValue, setInputValue] = useState("")
+// SecretInputForm removed — replaced by InputQuestionWidget in activeQuestion
+
+// SecretRequestForm removed — replaced by InputQuestionWidget in activeQuestion
+
+// ============================================================================
+// Secrets form (Environment Variables + Personal Secrets)
+// ============================================================================
+
+function SecretsForm({ appSecrets, appSecretValues, onAddSecret }: { appSecrets: AppState["secrets"]; appSecretValues: Record<string, string>; onAddSecret: (key: "DATABASE_URL" | "NPM_TOKEN", value: string) => void }) {
+  const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([{ key: "", value: "" }])
+  const [secrets, setSecrets] = useState<{ key: string; value: string; visible: boolean }[]>(() => {
+    const initial: { key: string; value: string; visible: boolean }[] = []
+    for (const [k, v] of Object.entries(appSecretValues)) {
+      initial.push({ key: k, value: v, visible: false })
+    }
+    if (initial.length === 0) initial.push({ key: "", value: "", visible: false })
+    return initial
+  })
+
+  // Sync secrets added from the chat flow (e.g. DATABASE_URL)
+  useEffect(() => {
+    for (const [k, v] of Object.entries(appSecretValues)) {
+      if (!secrets.some(s => s.key === k)) {
+        setSecrets(prev => {
+          // Replace the first empty row, or append
+          const emptyIdx = prev.findIndex(s => s.key === "" && s.value === "")
+          if (emptyIdx >= 0) {
+            return prev.map((item, i) => i === emptyIdx ? { key: k, value: v, visible: false } : item)
+          }
+          return [...prev, { key: k, value: v, visible: false }]
+        })
+      }
+    }
+  }, [appSecretValues])
+
+  const updateEnvVar = (index: number, field: "key" | "value", val: string) => {
+    setEnvVars(prev => prev.map((item, i) => i === index ? { ...item, [field]: val } : item))
+  }
+  const removeEnvVar = (index: number) => setEnvVars(prev => prev.filter((_, i) => i !== index))
+  const addEnvVar = () => setEnvVars(prev => [...prev, { key: "", value: "" }])
+
+  const updateSecret = (index: number, field: "key" | "value", val: string) => {
+    setSecrets(prev => prev.map((item, i) => i === index ? { ...item, [field]: val } : item))
+  }
+  const removeSecret = (index: number) => setSecrets(prev => prev.filter((_, i) => i !== index))
+  const toggleSecretVisibility = (index: number) => {
+    setSecrets(prev => prev.map((item, i) => i === index ? { ...item, visible: !item.visible } : item))
+  }
+  const addSecret = () => setSecrets(prev => [...prev, { key: "", value: "", visible: false }])
 
   return (
-    <section className="space-y-4">
-      <NarrativeBlock text={"The test command requires a database connection (e.g. DATABASE_URL). Add it so I can run the test command and confirm the setup allows agents to validate their work.\n\nThe value is stored securely for you and is never committed to the repository."} />
-      <div className="animate-chat-in animate-chat-in-delay-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <ChoiceCard recommended title="Add DATABASE_URL" description="Recommended. Validates the full setup including the test command." onClick={() => { setChoice("add"); setInputOpen(true); setInputValue("") }} />
-        <ChoiceCard title="Skip validating test command" description="Not recommended. Setup completes without validating the test command." onClick={() => { setChoice("skip"); onSkipTests() }} />
+    <div className="p-4 space-y-3">
+      {/* Environment Variables */}
+      <div className="rounded-[12px] p-4 space-y-3" style={{ background: "#252629" }}>
+        <Typography variant="header-3-semibold">Environment Variables</Typography>
+        {envVars.map((env, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <TextInput placeholder="Key" value={env.key} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateEnvVar(i, "key", e.target.value)} className="flex-1" />
+            <TextInput placeholder="Value" value={env.value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateEnvVar(i, "value", e.target.value)} className="flex-1" />
+            {envVars.length > 1 && <Button variant="ghost" size="icon" onClick={() => removeEnvVar(i)}>
+              <Icon lucide="Trash2" />
+            </Button>}
+          </div>
+        ))}
+        <Button variant="link" className="px-0" style={{ color: "var(--fleet-link-text-default)" }} onClick={addEnvVar}>Add variable</Button>
       </div>
-      {inputOpen && (
-        <div className="rounded-[12px] border p-4 animate-chat-in" style={{ borderColor: "var(--fleet-tileButton-off-border-default)", background: "var(--fleet-tileButton-off-background-default)" }}>
-          <label className="block text-[12px] font-medium mb-1" style={{ color: "var(--fleet-text-secondary)" }}>DATABASE_URL</label>
-          <TextInput type="password" value={inputValue} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)} placeholder="postgres://user:pass@host:5432/db" autoFocus />
-          <p className="mt-1.5 text-[11px]" style={{ color: "var(--fleet-text-secondary)" }}>Used when running the test command. Stored securely and never committed.</p>
-          <div className="mt-3 flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => { setInputOpen(false); setInputValue("") }}>Cancel</Button>
-            <Button variant="primary" onClick={() => { if (inputValue.trim()) { onAddSecret(inputValue.trim()); setInputValue(""); setInputOpen(false) } }} disabled={!inputValue.trim()}>Save</Button>
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
 
-function SecretRequestForm({ card, onAddSecret, onSkipTests }: { card: SecretRequestCardType; onAddSecret: (key: "DATABASE_URL" | "NPM_TOKEN", value: string) => void; onSkipTests?: () => void }) {
-  const [showForm, setShowForm] = useState(false)
-  const [value, setValue] = useState("")
-  return (
-    <div className="rounded-[12px] border p-3" style={{ borderColor: "var(--fleet-tileButton-off-border-default)", background: "var(--fleet-tileButton-off-background-default)" }}>
-      <div className="text-[12px] font-medium mb-1" style={{ color: "var(--fleet-text-primary)" }}>Provide {card.secretKey}</div>
-      <p className="text-[12px] mb-3" style={{ color: "var(--fleet-text-primary)" }}>{card.description}</p>
-      {!showForm ? (
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="primary" onClick={() => setShowForm(true)}>{card.primaryLabel}</Button>
-          {onSkipTests && <Button variant="secondary" onClick={onSkipTests}>{card.secondaryLabel}</Button>}
+      {/* Personal Secrets */}
+      <div className="rounded-[12px] p-4 space-y-3" style={{ background: "#252629" }}>
+        <div>
+          <Typography variant="header-3-semibold">Personal Secrets</Typography>
+          <div className="text-[12px] mt-0.5" style={{ color: "var(--fleet-text-secondary)" }}>Only you will have access to your personal secrets</div>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <TextInput type="password" value={value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(e.target.value)} placeholder={card.placeholder} autoFocus />
-          <div className="flex gap-2">
-            <Button variant="primary" onClick={() => { if (value.trim()) { onAddSecret(card.secretKey, value.trim()); setValue(""); setShowForm(false) } }}>Save</Button>
-            <Button variant="secondary" onClick={() => { setShowForm(false); setValue("") }}>Cancel</Button>
+        {secrets.map((secret, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <TextInput placeholder="Key" value={secret.key} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSecret(i, "key", e.target.value)} className="flex-1" />
+            <div className="flex-1 relative">
+              <TextInput type={secret.visible ? "text" : "password"} placeholder="Value" value={secret.value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSecret(i, "value", e.target.value)} className="w-full pr-8" />
+              <Button variant="ghost" size="icon" onClick={() => toggleSecretVisibility(i)} className="absolute right-1 top-1/2 -translate-y-1/2">
+                <Icon lucide={secret.visible ? "Eye" : "EyeOff"} />
+              </Button>
+            </div>
+            {secrets.length > 1 && <Button variant="ghost" size="icon" onClick={() => removeSecret(i)}>
+              <Icon lucide="Trash2" />
+            </Button>}
           </div>
-        </div>
-      )}
+        ))}
+        <Button variant="link" className="px-0" style={{ color: "var(--fleet-link-text-default)" }} onClick={addSecret}>Add secret</Button>
+      </div>
     </div>
   )
 }
@@ -977,14 +1064,7 @@ function DetailsPanel({ st, onClose }: { st: AppState; onClose: () => void }) {
           </div>
         </TabsContent>
         <TabsContent value="secrets" className="flex-1 overflow-auto p-4">
-          <div className="space-y-2 text-[13px]">
-            {(["DATABASE_URL", "NPM_TOKEN"] as const).map(k => (
-              <div key={k} className="flex justify-between items-center">
-                <span style={{ color: "var(--fleet-text-primary)" }}>{k}</span>
-                <span className="text-[12px]" style={{ color: st.secrets[k] === "provided" ? "var(--fleet-green)" : st.secrets[k] === "not_required" ? "var(--fleet-text-secondary)" : "var(--fleet-yellow)" }}>{st.secrets[k] === "provided" ? "Provided" : st.secrets[k] === "not_required" ? "Not required" : "Missing"}</span>
-              </div>
-            ))}
-          </div>
+          <SecretsForm appSecrets={st.secrets} appSecretValues={st.secretValues} onAddSecret={() => {}} />
         </TabsContent>
         <TabsContent value="logs" className="flex-1 overflow-auto p-4">
           <div className="space-y-3">
@@ -1011,6 +1091,160 @@ function DetailsPanel({ st, onClose }: { st: AppState; onClose: () => void }) {
 // ============================================================================
 // Optimization Report Panel
 // ============================================================================
+
+type HighLevelStep = { title: string; description: string; estimate: string; doneStates: SetupState[]; activeStates: SetupState[] }
+
+const HIGH_LEVEL_STEPS: HighLevelStep[] = [
+  { title: "Explore project", description: "Runtime, scripts, config", estimate: "~1 min", doneStates: ["RUN_SETUP_ATTEMPT", "BLOCKED_NPM_TOKEN", "BLOCKED_DATABASE_URL", "DATABASE_URL_ACKED", "TESTS_PASSED", "COMPLETION_ANNOUNCED", "CAPTURING_CONFIG", "CONFIG_CAPTURED", "ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"], activeStates: ["RUN_ANALYSIS"] },
+  { title: "Setup run", description: "Install, build, test", estimate: "~2–3 min", doneStates: ["TESTS_PASSED", "COMPLETION_ANNOUNCED", "CAPTURING_CONFIG", "CONFIG_CAPTURED", "ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"], activeStates: ["RUN_SETUP_ATTEMPT", "BLOCKED_NPM_TOKEN", "BLOCKED_DATABASE_URL", "DATABASE_URL_ACKED"] },
+  { title: "Capture configuration", description: "Environment config", estimate: "~30s", doneStates: ["ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"], activeStates: ["CAPTURING_CONFIG", "CONFIG_CAPTURED"] },
+  { title: "Agent optimization", description: "AGENTS.md, commands, verify", estimate: "~2 min", doneStates: ["AGENT_OPT_COMPLETE"], activeStates: ["AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING"] },
+]
+
+function getStepStatus(step: HighLevelStep, state: SetupState): "done" | "in-progress" | "todo" {
+  if (step.doneStates.includes(state)) return "done"
+  if (step.activeStates.includes(state)) return "in-progress"
+  return "todo"
+}
+
+function ProgressTabContent({ state }: { state: SetupState }) {
+  return (
+    <div className="p-4 space-y-4">
+      <div>
+        <Typography variant="header-3-semibold">Setup progress</Typography>
+        <Typography variant="default" as="p" className="mt-1" style={{ color: "var(--fleet-text-secondary)" }}>
+          Preparing this repository so cloud agents can install, build, and test reliably.
+        </Typography>
+      </div>
+      <div className="space-y-0.5">
+        {(() => {
+          const statuses = HIGH_LEVEL_STEPS.map(s => getStepStatus(s, state))
+          const anyInProgress = statuses.includes("in-progress")
+          const allDone = statuses.every(s => s === "done")
+          // If no step is in-progress and not all done, treat the last done step as in-progress
+          if (!anyInProgress && !allDone) {
+            const lastDoneIdx = statuses.lastIndexOf("done")
+            if (lastDoneIdx >= 0) statuses[lastDoneIdx] = "in-progress"
+          }
+          return HIGH_LEVEL_STEPS.map((step, i) => {
+            const status = statuses[i]
+            const hint = status === "in-progress"
+              ? `${step.description} · ${step.estimate}`
+              : step.description
+            return (
+              <WorkflowStep
+                key={step.title}
+                title={step.title}
+                hint={hint}
+                status={status}
+                isLast={i === HIGH_LEVEL_STEPS.length - 1}
+              />
+            )
+          })
+        })()}
+      </div>
+    </div>
+  )
+}
+
+const ENV_CONFIG_FILES = [
+  { name: ".cloud/env.json", added: 24, removed: 0 },
+  { name: ".cloud/secrets.json", added: 8, removed: 0 },
+  { name: ".cloud/commands.json", added: 12, removed: 0 },
+]
+
+const OPT_FILES = [
+  { name: "AGENTS.md", added: 45, removed: 0 },
+  { name: "docs/agent/commands.md", added: 18, removed: 0 },
+  { name: "scripts/verify.sh", added: 12, removed: 0 },
+  { name: ".github/pull_request_template.md", added: 9, removed: 0 },
+  { name: ".github/ISSUE_TEMPLATE/bug_report.md", added: 6, removed: 0 },
+  { name: ".github/ISSUE_TEMPLATE/feature_request.md", added: 5, removed: 17 },
+]
+
+const CONFIG_READY_STATES: SetupState[] = ["ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"]
+
+function ChangesTabContent({ state, optimizationApplied }: { state: SetupState; optimizationApplied: boolean }) {
+  const showEnv = CONFIG_READY_STATES.includes(state)
+  const showOpt = state === "AGENT_OPT_COMPLETE" && optimizationApplied
+  const files = [...(showEnv ? ENV_CONFIG_FILES : []), ...(showOpt ? OPT_FILES : [])]
+
+  if (files.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full" style={{ color: "var(--fleet-text-secondary)" }}>
+        <Typography variant="default">No changes yet</Typography>
+      </div>
+    )
+  }
+
+  return (
+    <List
+      items={files}
+      keyFn={f => f.name}
+      renderItem={(f) => (
+        <ListItem
+          variant="changes"
+          text={f.name}
+          icon={<Icon fleet="json" />}
+          additions={f.added}
+          deletions={f.removed}
+        />
+      )}
+    />
+  )
+}
+
+function ReportTabContent({ appliedCount }: { appliedCount: number }) {
+  const hasApplied = appliedCount > 0
+  const autoFixItems = OPTIMIZATION_ITEMS.filter(item => item.type === "auto-fix")
+  const recommendationItems = OPTIMIZATION_ITEMS.filter(item => item.type === "recommendation")
+
+  return (
+    <div className="flex-1 overflow-auto p-4 space-y-5">
+      <div className="rounded-[12px] p-4" style={{ background: "#252629" }}>
+        <Typography variant="header-2-semibold">Optimization Report (Needs design work)</Typography>
+        <Typography variant="default" className="mt-1" style={{ color: "var(--fleet-text-secondary)" }}>Agent optimization best practices for this repository.</Typography>
+        <div className="flex gap-4 mt-3">
+          <div className="flex items-center gap-1.5">
+            <Icon lucide="Check" size="xs" style={{ color: hasApplied ? "var(--fleet-green)" : "var(--fleet-text-secondary)" }} />
+            <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>{hasApplied ? `${appliedCount} applied` : `${autoFixItems.length} auto-fixes`}</Typography>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Icon lucide="MessageCircle" size="xs" style={{ color: "var(--fleet-text-secondary)" }} />
+            <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>{recommendationItems.length} recommendations</Typography>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <Typography variant="header-3-semibold">Auto-fix ({hasApplied ? `${appliedCount} applied` : autoFixItems.length})</Typography>
+        {autoFixItems.map(item => (
+          <div key={item.id} className="flex gap-2">
+            <Icon lucide="Check" size="xs" className="shrink-0 mt-0.5" style={{ color: hasApplied ? "var(--fleet-green)" : "var(--fleet-text-secondary)" }} />
+            <div>
+              <Typography variant="default-semibold">{item.title}</Typography>
+              <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>{item.oneLine}</Typography>
+              {item.files.length > 0 && <Typography variant="default" className="mt-0.5 font-mono text-[12px]" style={{ color: "var(--fleet-text-secondary)" }}>{item.files.join(", ")}</Typography>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        <Typography variant="header-3-semibold">Recommendations ({recommendationItems.length})</Typography>
+        {recommendationItems.map(item => (
+          <div key={item.id} className="flex gap-2">
+            <span className="shrink-0 mt-0.5" style={{ color: "var(--fleet-text-secondary)" }}>·</span>
+            <div>
+              <Typography variant="default-semibold">{item.title}</Typography>
+              <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>{item.oneLine}</Typography>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function OptimizationReportPanel({ onClose, appliedCount }: { onClose: () => void; appliedCount: number }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -1140,7 +1374,7 @@ function SplashScreen({ onStart, onCancel }: { onStart: () => void; onCancel: ()
 
 const STAGGER_MS = 100
 
-function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, onViewDetails, onViewLogs, onViewOptimizationReport, onOpenPrModal }: {
+function useExecutionMessages({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, onViewDetails, onViewLogs, onViewOptimizationReport, onOpenPrModal }: {
   st: AppState; onAddSecret: (key: "DATABASE_URL" | "NPM_TOKEN", value: string) => void; onSkipTests: () => void; onEnvConfigChoice: (choice: "continue" | "create_pr") => void; onOptimizationChoice: (choice: "apply" | "skip") => void; onViewDetails: () => void; onViewLogs: () => void; onViewOptimizationReport: () => void; onOpenPrModal: () => void
 }) {
   const showAnalysisBox = st.activityTimeline.length > 0 || st.state === "RUN_ANALYSIS"
@@ -1157,6 +1391,7 @@ function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOpti
   const resultCard = findLastCard(st, "result")
   const nextCard = findLastCard(st, "next_steps")
 
+  const [secretInputOpen, setSecretInputOpen] = useState(false)
   const [analysisBoxUserExpanded, setAnalysisBoxUserExpanded] = useState(false)
   const [setupBoxUserExpanded, setSetupBoxUserExpanded] = useState(false)
   const [frozenSetupBoxUserExpanded, setFrozenSetupBoxUserExpanded] = useState(false)
@@ -1179,13 +1414,13 @@ function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOpti
     if (st.state === "AGENT_OPT_COMPLETE") setOptimizationApplyingBoxUserExpanded(false)
   }, [st.state])
 
-  const analysisExpanded = analysisInProgress || analysisBoxUserExpanded
-  const setupExpanded = (st.state === "BLOCKED_DATABASE_URL" || st.state === "BLOCKED_NPM_TOKEN") && !hasFrozenRun ? setupBoxUserExpanded : (showSetupBox && !hasFrozenRun && activityExpanded) || setupBoxUserExpanded
+  const analysisExpanded = analysisBoxUserExpanded
+  const setupExpanded = setupBoxUserExpanded
   const frozenExpanded = frozenSetupBoxUserExpanded
-  const resumedExpanded = (showResumedBox && activityExpanded) || resumedBoxUserExpanded
-  const configCaptureExpanded = st.state === "CAPTURING_CONFIG" || configCaptureBoxUserExpanded
-  const optimizationAnalysisExpanded = st.state === "AGENT_OPT_ANALYZING" || optimizationAnalysisBoxUserExpanded
-  const optimizationApplyingExpanded = st.state === "AGENT_OPT_APPLYING" || optimizationApplyingBoxUserExpanded
+  const resumedExpanded = resumedBoxUserExpanded
+  const configCaptureExpanded = configCaptureBoxUserExpanded
+  const optimizationAnalysisExpanded = optimizationAnalysisBoxUserExpanded
+  const optimizationApplyingExpanded = optimizationApplyingBoxUserExpanded
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -1194,201 +1429,309 @@ function ExecutionView({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOpti
   useEffect(() => { const r = requestAnimationFrame(() => { requestAnimationFrame(scrollToBottom) }); return () => cancelAnimationFrame(r) }, [st.messages.length, st.state])
   useEffect(() => { const el = contentRef.current; if (!el) return; const obs = new ResizeObserver(() => { requestAnimationFrame(scrollToBottom) }); obs.observe(el); return () => obs.disconnect() }, [])
 
-  return (
-    <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col hide-scrollbar">
-      <div ref={contentRef} className="max-w-2xl w-full mx-auto px-6 py-6 space-y-6">
-        <div>
-          <Typography variant="header-3-semibold">Setting up the project</Typography>
-          <Typography variant="default" as="p" className="mt-0.5" style={{ color: "var(--fleet-text-secondary)" }}>Preparing this repository so cloud agents can run reliably</Typography>
-        </div>
+  // Build chat messages for ChatIsland
+  const chatMessages: UIChatMessage[] = []
+  let msgIdx = 0
+  const pushAssistant = (content: React.ReactNode) => { chatMessages.push({ id: `auto-${msgIdx++}`, role: "assistant", content }) }
+  const pushUser = (content: React.ReactNode) => { chatMessages.push({ id: `auto-${msgIdx++}`, role: "user", content }) }
 
-        <NarrativeBlock text={"I'm going to analyze this repository and prepare an environment so cloud agents can run install, build, and test commands reliably.\n\nI'll validate that those commands work in a clean environment and only ask for input if something blocks progress."} />
+  // Opening message
+  pushAssistant("I'm going to analyze this repository and prepare an environment so cloud agents can run install, build, and test commands reliably.\n\nI'll validate that those commands work in a clean environment and only ask for input if something blocks progress.")
 
-        {/* Analysis activity box */}
-        {showAnalysisBox && (
-          <div className="animate-chat-in">
-            <ActivityBox title="Exploring the project" doneLabel="Explored the project" lines={st.activityTimeline} summary={analysisSummary} expanded={analysisExpanded} onToggle={() => setAnalysisBoxUserExpanded(e => !e)} thinking={st.agentThinking && st.state === "RUN_ANALYSIS"} collapsedSecondaryLine={hasPlanMessage ? `Thought for ${ANALYSIS_DURATION_SECONDS} seconds` : st.agentThinking && st.state === "RUN_ANALYSIS" && st.activityTimeline.length > 0 ? st.activityTimeline[st.activityTimeline.length - 1]?.label ?? "Exploring project…" : st.activityTimeline.length > 0 ? st.activityTimeline[st.activityTimeline.length - 1]?.label : undefined} />
-          </div>
-        )}
+  // Analysis activity box
+  if (showAnalysisBox) {
+    pushAssistant(
+      <ActivityBox title="Exploring the project" doneLabel="Explored the project" lines={st.activityTimeline} summary={analysisSummary} expanded={analysisExpanded} onToggle={() => setAnalysisBoxUserExpanded(e => !e)} thinking={st.agentThinking && st.state === "RUN_ANALYSIS"} collapsedSecondaryLine={hasPlanMessage ? `Thought for ${ANALYSIS_DURATION_SECONDS} seconds` : st.agentThinking && st.state === "RUN_ANALYSIS" && st.activityTimeline.length > 0 ? st.activityTimeline[st.activityTimeline.length - 1]?.label ?? "Exploring project…" : st.activityTimeline.length > 0 ? st.activityTimeline[st.activityTimeline.length - 1]?.label : undefined} />
+    )
+  }
 
-        {hasPlanMessage && <NarrativeBlock text={"I found a Node.js project with a lockfile.\n\nI'll validate the install, build, and test commands in a clean environment so agents can use them to validate their work."} />}
+  if (hasPlanMessage) {
+    pushAssistant("I found a Node.js project with a lockfile.\n\nI'll validate the install, build, and test commands in a clean environment so agents can use them to validate their work.")
+  }
 
-        {/* Setup run box (no snapshot) */}
-        {showSetupBox && !hasFrozenRun && (
-          <div className="animate-chat-in">
-            <ActivityBox title="Setup run" doneLabel="Setup complete" lines={setupActivityLines} summary={setupSummary} expanded={setupExpanded} onToggle={() => setSetupBoxUserExpanded(e => !e)} failed={st.state === "BLOCKED_DATABASE_URL" || st.state === "BLOCKED_NPM_TOKEN"} collapsedSecondaryLine={["GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS"].includes(st.state) ? `Completed in ${SETUP_RUN_DURATION_SECONDS} seconds` : st.state === "BLOCKED_DATABASE_URL" ? `Ran for ${SETUP_RUN_DURATION_SECONDS} seconds` : st.state === "BLOCKED_NPM_TOKEN" ? `Ran for ${SETUP_DURATION_BEFORE_INSTALL_FAILURE_SECONDS} seconds` : getCurrentSetupStepLabel(st.setupSteps)} />
-          </div>
-        )}
+  // Setup run box (no snapshot)
+  if (showSetupBox && !hasFrozenRun) {
+    pushAssistant(
+      <ActivityBox title="Setup run" doneLabel="Setup complete" failedLabel="Setup run failed" lines={setupActivityLines} summary={setupSummary} expanded={setupExpanded} onToggle={() => setSetupBoxUserExpanded(e => !e)} failed={st.state === "BLOCKED_DATABASE_URL" || st.state === "BLOCKED_NPM_TOKEN"} collapsedSecondaryLine={["GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS"].includes(st.state) ? `Completed in ${SETUP_RUN_DURATION_SECONDS} seconds` : st.state === "BLOCKED_DATABASE_URL" ? `Ran for ${SETUP_RUN_DURATION_SECONDS} seconds` : st.state === "BLOCKED_NPM_TOKEN" ? `Ran for ${SETUP_DURATION_BEFORE_INSTALL_FAILURE_SECONDS} seconds` : getCurrentSetupStepLabel(st.setupSteps)} />
+    )
+  }
 
-        {/* Frozen first run */}
-        {showSetupBox && hasFrozenRun && (
-          <div className="animate-chat-in">
-            <ActivityBox title="Setup run" doneLabel="Setup complete" lines={frozenLines} summary="Test command requires DATABASE_URL" expanded={frozenExpanded} onToggle={() => setFrozenSetupBoxUserExpanded(e => !e)} failed collapsedSecondaryLine={`Ran for ${SETUP_RUN_DURATION_SECONDS} seconds`} />
-          </div>
-        )}
+  // Frozen first run
+  if (showSetupBox && hasFrozenRun) {
+    pushAssistant(
+      <ActivityBox title="Setup run" doneLabel="Setup complete" failedLabel="Setup run failed" lines={frozenLines} summary="Test command requires DATABASE_URL" expanded={frozenExpanded} onToggle={() => setFrozenSetupBoxUserExpanded(e => !e)} failed collapsedSecondaryLine={`Ran for ${SETUP_RUN_DURATION_SECONDS} seconds`} />
+    )
+  }
 
-        {/* Configuration required: DATABASE_URL */}
-        {st.state === "BLOCKED_DATABASE_URL" && secretCard?.kind === "secret_request" && secretCard.secretKey === "DATABASE_URL" && (
-          <ConfigRequiredBlock onAddSecret={(value) => onAddSecret("DATABASE_URL", value)} onSkipTests={onSkipTests} />
-        )}
-        {hasFrozenRun && st.state !== "BLOCKED_DATABASE_URL" && (
-          <p className="text-[13px] leading-5 whitespace-pre-wrap py-1" style={{ color: "var(--fleet-text-primary)" }}>{"The test command requires a database connection (e.g. DATABASE_URL). Add it so I can run the test command and confirm the setup allows agents to validate their work.\n\nThe value is stored securely for you and is never committed to the repository."}</p>
-        )}
+  // Configuration required: DATABASE_URL
+  if (st.state === "BLOCKED_DATABASE_URL" && secretCard?.kind === "secret_request" && secretCard.secretKey === "DATABASE_URL") {
+    pushAssistant("The test command requires a database connection (e.g. DATABASE_URL). Add it so I can run the test command and confirm the setup allows agents to validate their work.\n\nThe value is stored securely for you and is never committed to the repository.")
+  }
+  if (hasFrozenRun && st.state !== "BLOCKED_DATABASE_URL") {
+    pushAssistant("The test command requires a database connection (e.g. DATABASE_URL). Add it so I can run the test command and confirm the setup allows agents to validate their work.\n\nThe value is stored securely for you and is never committed to the repository.")
+  }
 
-        {/* Blocked NPM_TOKEN */}
-        {st.state === "BLOCKED_NPM_TOKEN" && secretCard && secretCard.kind === "secret_request" && (
-          <>
-            <div className="animate-chat-in"><NarrativeBlock text={"I can't complete the setup yet.\n\nDependency install failed due to private packages. Please provide NPM_TOKEN to continue."} /></div>
-            <div className="animate-chat-in space-y-3" style={{ ["--chat-in-delay" as string]: `${STAGGER_MS}ms` }}>
-              <SecretRequestForm card={secretCard} onAddSecret={onAddSecret} />
-            </div>
-          </>
-        )}
+  // Blocked NPM_TOKEN
+  if (st.state === "BLOCKED_NPM_TOKEN" && secretCard && secretCard.kind === "secret_request") {
+    pushAssistant("I can't complete the setup yet.\n\nDependency install failed due to private packages. Please provide NPM_TOKEN to continue.")
+  }
 
-        {/* User + agent ack messages */}
-        {hasFrozenRun
-          ? messagesBeforeResumedRun(st).map((msg, i) => <div key={msg.id} className="animate-chat-in" style={{ ["--chat-in-delay" as string]: `${i * STAGGER_MS}ms` }}><MessageBubble message={msg} /></div>)
-          : messagesAfterSecretRequest(st).map((msg, i) => <div key={msg.id} className="animate-chat-in" style={{ ["--chat-in-delay" as string]: `${i * STAGGER_MS}ms` }}><MessageBubble message={msg} /></div>)
-        }
+  // User + agent ack messages
+  const ackMessages = hasFrozenRun ? messagesBeforeResumedRun(st) : messagesAfterSecretRequest(st)
+  for (const msg of ackMessages) {
+    if (msg.role === "user") pushUser(msg.text)
+    else pushAssistant(msg.text)
+  }
 
-        {/* Resumed run box */}
-        {showResumedBox && (
-          <div className="animate-chat-in" style={{ ["--chat-in-delay" as string]: `${2 * STAGGER_MS}ms` }}>
-            <ActivityBox title="Validate test command" doneLabel="Test command validated" lines={setupActivityLines} summary={COMPLETED_STATES.includes(st.state) ? "Test command validated" : setupSummary} expanded={resumedExpanded} onToggle={() => setResumedBoxUserExpanded(e => !e)} collapsedSecondaryLine={COMPLETED_STATES.includes(st.state) || POST_SETUP_CONFIG_STATES.includes(st.state) ? `Completed in ${RESUMED_RUN_DURATION_SECONDS} seconds` : "Validating test command (npm test)"} />
-          </div>
-        )}
+  // Resumed run box
+  if (showResumedBox) {
+    pushAssistant(
+      <ActivityBox title="Validate test command" doneLabel="Test command validated" lines={setupActivityLines} summary={COMPLETED_STATES.includes(st.state) ? "Test command validated" : setupSummary} expanded={resumedExpanded} onToggle={() => setResumedBoxUserExpanded(e => !e)} collapsedSecondaryLine={COMPLETED_STATES.includes(st.state) || POST_SETUP_CONFIG_STATES.includes(st.state) ? `Completed in ${RESUMED_RUN_DURATION_SECONDS} seconds` : "Validating test command (npm test)"} />
+    )
+  }
 
-        {st.state === "RUN_SETUP_ATTEMPT" && st.agentThinking && st.setupSteps.find((s) => s.id === "test")?.status === "running" && (
-          <p className="text-[11px]" style={{ color: "var(--fleet-text-secondary)" }}>Validating test command with updated configuration…</p>
-        )}
 
-        {/* Completion messages + capture config activity box */}
-        {hasFrozenRun && (() => {
-          const list = messagesAfterResumedRun(st)
-          const firstSystemIdx = list.findIndex((m) => m.role === "system")
-          const showCaptureBox = (st.state === "CAPTURING_CONFIG" || st.state === "CONFIG_CAPTURED" || st.state === "ENV_CONFIG_READY") && firstSystemIdx >= 0
-          const isCompleted = st.state === "CONFIG_CAPTURED" || st.state === "ENV_CONFIG_READY"
-          return list.map((msg, i) => (
-            <div key={msg.id} className="animate-chat-in space-y-6" style={{ ["--chat-in-delay" as string]: `${i * STAGGER_MS}ms` }}>
-              <MessageBubble message={msg} />
-              {i === firstSystemIdx && showCaptureBox && st.captureConfigLines.length > 0 && (
-                <ActivityBox title="Capturing environment configuration" doneLabel="Captured environment configuration" lines={st.captureConfigLines} summary={isCompleted ? "Completed" : "Capturing…"} expanded={configCaptureExpanded} onToggle={() => setConfigCaptureBoxUserExpanded(e => !e)} collapsedSecondaryLine={isCompleted ? `Completed in ${CAPTURE_CONFIG_DURATION_SECONDS} seconds` : undefined} />
-              )}
-            </div>
-          ))
-        })()}
+  // Completion messages + capture config activity box
+  if (hasFrozenRun) {
+    const list = messagesAfterResumedRun(st)
+    const firstSystemIdx = list.findIndex((m) => m.role === "system")
+    const showCaptureBox = (st.state === "CAPTURING_CONFIG" || st.state === "CONFIG_CAPTURED" || st.state === "ENV_CONFIG_READY") && firstSystemIdx >= 0
+    const isCompleted = st.state === "CONFIG_CAPTURED" || st.state === "ENV_CONFIG_READY"
+    for (let i = 0; i < list.length; i++) {
+      const msg = list[i]
+      const captureBox = i === firstSystemIdx && showCaptureBox && st.captureConfigLines.length > 0
+        ? <ActivityBox title="Capturing environment configuration" doneLabel="Captured environment configuration" lines={st.captureConfigLines} summary={isCompleted ? "Completed" : "Capturing…"} expanded={configCaptureExpanded} onToggle={() => setConfigCaptureBoxUserExpanded(e => !e)} collapsedSecondaryLine={isCompleted ? `Completed in ${CAPTURE_CONFIG_DURATION_SECONDS} seconds` : undefined} />
+        : null
+      if (msg.role === "user") {
+        pushUser(msg.text)
+      } else {
+        pushAssistant(msg.text)
+        if (captureBox) pushAssistant(captureBox)
+      }
+    }
+  }
 
-        {/* Env config ready milestone */}
-        {(st.state === "ENV_CONFIG_READY" || OPT_STATES.includes(st.state)) && (
-          <section className="animate-chat-in space-y-3">
-            <EnvConfigReadyCardUI />
-            <NarrativeBlock text="Your environment configuration is ready. You can now continue working with cloud agents using this setup, or create a pull request to apply it to the repository." />
-            {st.state === "ENV_CONFIG_READY" && st.envConfigChoice == null && (
-              <div className="animate-chat-in animate-chat-in-delay-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <ChoiceCard recommended title="Continue to agent optimization" description="Keep working with cloud agents using this validated environment to improve, refactor, or extend the project." onClick={() => onEnvConfigChoice("continue")} />
-                <ChoiceCard title="Create pull request" description="Create a pull request that adds the captured environment configuration to the repository." onClick={() => onEnvConfigChoice("create_pr")} />
-              </div>
-            )}
-          </section>
-        )}
+  // Env config ready milestone
+  if (st.state === "ENV_CONFIG_READY" || OPT_STATES.includes(st.state)) {
+    pushAssistant(`Environment configuration is ready. This configuration reflects a validated setup where install, build, and test commands ran successfully in a clean environment.\n\n${CONFIG_SUMMARY.map(s => `${s.label}: ${s.value}`).join("\n")}`)
+  }
 
-        {/* Optimization phase messages before analysis */}
-        {OPT_STATES.includes(st.state) && optimizationMessagesBeforeAnalysis(st).map((msg, i) => (
-          <div key={msg.id} className="animate-chat-in" style={{ ["--chat-in-delay" as string]: `${i * STAGGER_MS}ms` }}><MessageBubble message={msg} /></div>
-        ))}
+  // Optimization phase messages before analysis
+  if (OPT_STATES.includes(st.state)) {
+    for (const msg of optimizationMessagesBeforeAnalysis(st)) {
+      if (msg.role === "user") pushUser(msg.text)
+      else pushAssistant(msg.text)
+    }
+  }
 
-        {/* Optimization analysis activity box */}
-        {["AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state) && st.optimizationAnalysisLines.length > 0 && (() => {
-          const done = ["AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state)
-          return (
-            <section className="animate-chat-in">
-              <ActivityBox title="Analyzing repository for agent optimization" doneLabel="Analyzed repository for agent optimization" lines={st.optimizationAnalysisLines} summary={done ? "Completed" : "Analyzing…"} expanded={optimizationAnalysisExpanded} onToggle={() => setOptimizationAnalysisBoxUserExpanded(e => !e)} collapsedSecondaryLine={done ? `Completed in ${OPTIMIZATION_ANALYSIS_DURATION_SECONDS} seconds` : undefined} />
-            </section>
-          )
-        })()}
+  // Optimization analysis activity box
+  if (["AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state) && st.optimizationAnalysisLines.length > 0) {
+    const done = ["AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state)
+    pushAssistant(
+      <ActivityBox title="Analyzing repository for agent optimization" doneLabel="Analyzed repository for agent optimization" lines={st.optimizationAnalysisLines} summary={done ? "Completed" : "Analyzing…"} expanded={optimizationAnalysisExpanded} onToggle={() => setOptimizationAnalysisBoxUserExpanded(e => !e)} collapsedSecondaryLine={done ? `Completed in ${OPTIMIZATION_ANALYSIS_DURATION_SECONDS} seconds` : undefined} />
+    )
+  }
 
-        {/* Messages before report */}
-        {["AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state) && optimizationMessagesBeforeReport(st).map((msg, i) => (
-          <div key={msg.id} className="animate-chat-in" style={{ ["--chat-in-delay" as string]: `${i * STAGGER_MS}ms` }}><MessageBubble message={msg} /></div>
-        ))}
+  // Messages before report
+  if (["AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state)) {
+    for (const msg of optimizationMessagesBeforeReport(st)) {
+      if (msg.role === "user") pushUser(msg.text)
+      else pushAssistant(msg.text)
+    }
+  }
 
-        {/* Optimization report card + choice cards */}
-        {["AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state) && st.optimizationReportVisible && (() => {
-          const rc = findLastCard(st, "optimization_report")
-          if (!rc || rc.kind !== "optimization_report") return null
-          return (
-            <section className="animate-chat-in space-y-3">
-              <OptReportCardUI card={rc} onViewReport={onViewOptimizationReport} onViewChanges={st.optimizationApplied ? onViewOptimizationReport : undefined} />
-              {st.optimizationChoice == null && st.state === "AGENT_OPT_REPORT_READY" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <ChoiceCard recommended title="Apply auto-fixes" description="Create or update repo files for AGENTS.md, commands documentation, verify script, and PR templates." onClick={() => onOptimizationChoice("apply")} />
-                  <ChoiceCard title="Skip auto-fixes" description="Continue without changing the repo. You can still create a pull request for environment configuration." onClick={() => onOptimizationChoice("skip")} />
-                </div>
-              )}
-            </section>
-          )
-        })()}
+  // Optimization report card + choice cards
+  if (["AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state) && st.optimizationReportVisible) {
+    const rc = findLastCard(st, "optimization_report")
+    if (rc && rc.kind === "optimization_report") {
+      pushAssistant("Optimization report is ready. Auto-fix: " + (rc.appliedCount > 0 ? rc.appliedCount + " applied" : rc.autoFixCount) + ", Recommendations: " + rc.recommendationCount + ".\n\nThis report summarizes what I found in the repo and what I can improve automatically.")
+      pushAssistant(
+        <Button variant="primary" onClick={onViewOptimizationReport}>View report</Button>
+      )
+    }
+  }
 
-        {/* Messages after choice */}
-        {["AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state) && optimizationMessagesAfterChoice(st).map((msg, i) => (
-          <div key={msg.id} className="animate-chat-in" style={{ ["--chat-in-delay" as string]: `${i * STAGGER_MS}ms` }}><MessageBubble message={msg} /></div>
-        ))}
+  // Messages after choice
+  if (["AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state)) {
+    for (const msg of optimizationMessagesAfterChoice(st)) {
+      if (msg.role === "user") pushUser(msg.text)
+      else pushAssistant(msg.text)
+    }
+  }
 
-        {/* Applying auto-fixes activity box */}
-        {["AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state) && st.optimizationChoice === "apply" && st.optimizationApplyingLines.length > 0 && (() => {
-          const done = st.state === "AGENT_OPT_COMPLETE"
-          return (
-            <section className="animate-chat-in">
-              <ActivityBox title="Applying auto-fixes" doneLabel="Applied auto-fixes" lines={st.optimizationApplyingLines} summary={done ? "Completed" : "Applying…"} expanded={optimizationApplyingExpanded} onToggle={() => setOptimizationApplyingBoxUserExpanded(e => !e)} collapsedSecondaryLine={done ? `Completed in ${OPTIMIZATION_APPLYING_DURATION_SECONDS} seconds` : undefined} />
-            </section>
-          )
-        })()}
+  // Applying auto-fixes activity box
+  if (["AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state) && st.optimizationChoice === "apply" && st.optimizationApplyingLines.length > 0) {
+    const done = st.state === "AGENT_OPT_COMPLETE"
+    pushAssistant(
+      <ActivityBox title="Applying auto-fixes" doneLabel="Applied auto-fixes" lines={st.optimizationApplyingLines} summary={done ? "Completed" : "Applying…"} expanded={optimizationApplyingExpanded} onToggle={() => setOptimizationApplyingBoxUserExpanded(e => !e)} collapsedSecondaryLine={done ? `Completed in ${OPTIMIZATION_APPLYING_DURATION_SECONDS} seconds` : undefined} />
+    )
+  }
 
-        {/* Agent optimization complete */}
-        {st.state === "AGENT_OPT_COMPLETE" && (() => {
-          const cc = findLastCard(st, "agent_opt_complete")
-          if (!cc || cc.kind !== "agent_opt_complete") return null
-          return (
-            <section className="animate-chat-in space-y-3">
-              {st.optimizationApplied && <AgentOptCompleteCardUI />}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <ChoiceCard recommended title="Create pull request" description={st.optimizationApplied ? "Open a pull request with environment configuration and agent optimization changes." : "Open a pull request with environment configuration changes."} onClick={onOpenPrModal} />
-                <ChoiceCard title="Continue exploring" description={st.optimizationApplied ? "Keep reviewing the setup and report without creating a pull request yet." : "Keep reviewing the report and setup without creating a pull request yet."} onClick={() => {}} />
-              </div>
-            </section>
-          )
-        })()}
+  // Agent optimization complete
+  if (st.state === "AGENT_OPT_COMPLETE") {
+    const cc = findLastCard(st, "agent_opt_complete")
+    if (cc && cc.kind === "agent_opt_complete" && st.optimizationApplied) {
+      pushAssistant(`Agent optimization complete.\n\nThis repository now includes agent guidance, documented commands, and a verification entrypoint.\n\n${OPT_SUMMARY.map(s => `${s.label}: ${s.value}`).join("\n")}`)
+    }
+  }
 
-        {/* Result card (for non-env-config path) */}
-        {(st.state === "REPORT_RESULT" || st.state === "COMPLETION_ACTIONS") && resultCard && resultCard.kind === "result" && (
-          <section className="animate-chat-in space-y-3">
-            <NarrativeBlock text={"Your environment is ready.\n\nCloud agents can now install dependencies, build the project, and run the test command to validate their work."} />
-            <ResultCardUI card={resultCard} onViewDetails={onViewDetails} onViewLogs={onViewLogs} />
-          </section>
-        )}
-
-        {/* Next steps card */}
-        {st.state === "COMPLETION_ACTIONS" && nextCard && nextCard.kind === "next_steps" && (
-          <section className="animate-chat-in space-y-3" style={{ ["--chat-in-delay" as string]: `${STAGGER_MS}ms` }}>
-            <NarrativeBlock text="What would you like to do next?" />
-            <div className="rounded-[12px] border p-3" style={{ borderColor: "var(--fleet-tileButton-off-border-default)", background: "var(--fleet-tileButton-off-background-default)" }}>
-              <div className="flex gap-2 flex-wrap">
-                <Button variant="primary" onClick={onOpenPrModal}>{nextCard.createPrLabel}</Button>
-                <Button variant="secondary" disabled={nextCard.continueDisabled}>Continue to Agent Optimization</Button>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* PR created banner */}
-        {st.prCreated && (
-          <div className="animate-chat-in">
-            <Banner type="positive" inline text="Pull request created: Configure cloud environment for agent runs" closeable={false} />
-          </div>
-        )}
-
-        <div ref={bottomRef} aria-hidden="true" className="h-[100px] shrink-0" />
+  // Result card (for non-env-config path)
+  if ((st.state === "REPORT_RESULT" || st.state === "COMPLETION_ACTIONS") && resultCard && resultCard.kind === "result") {
+    pushAssistant(
+      <div className="space-y-3">
+        <NarrativeBlock text={"Your environment is ready.\n\nCloud agents can now install dependencies, build the project, and run the test command to validate their work."} />
+        <ResultCardUI card={resultCard} onViewDetails={onViewDetails} onViewLogs={onViewLogs} />
       </div>
+    )
+  }
+
+  // PR created banner
+  if (st.prCreated) {
+    pushAssistant(<Banner type="positive" inline text="Pull request created: Configure cloud environment for agent runs" closeable={false} />)
+  }
+
+  // Build active question widget (shown above input)
+  let activeQuestion: React.ReactNode = null
+
+  if (st.state === "BLOCKED_DATABASE_URL" && secretInputOpen) {
+    activeQuestion = (
+      <InputQuestionWidget
+        question="Provide DATABASE_URL"
+        placeholder="postgres://user:pass@host:5432/db"
+        hint="Used when running the test command. Stored securely and never committed."
+        submitLabel="Save"
+        cancelLabel="Cancel"
+        onSubmit={(value) => { onAddSecret("DATABASE_URL", value); setSecretInputOpen(false) }}
+        onCancel={() => setSecretInputOpen(false)}
+      />
+    )
+  } else if (st.state === "BLOCKED_DATABASE_URL" && !secretInputOpen) {
+    activeQuestion = (
+      <QuestionWidget
+        question="The test command requires DATABASE_URL. How would you like to proceed?"
+        answers={[
+          { label: "Add DATABASE_URL", description: "Validates the full setup including the test command.", onClick: () => setSecretInputOpen(true) },
+          { label: "Skip validating test command", description: "Setup completes without validating the test command.", onClick: onSkipTests },
+        ]}
+      />
+    )
+  } else if (st.state === "BLOCKED_NPM_TOKEN" && secretCard && secretCard.kind === "secret_request") {
+    activeQuestion = (
+      <InputQuestionWidget
+        question={`Provide ${secretCard.secretKey}`}
+        placeholder={secretCard.placeholder}
+        hint={secretCard.description}
+        submitLabel="Save"
+        cancelLabel="Skip"
+        onSubmit={(value) => onAddSecret(secretCard.secretKey, value)}
+        onCancel={onSkipTests}
+      />
+    )
+  } else if (st.state === "ENV_CONFIG_READY" && st.envConfigChoice == null) {
+    activeQuestion = (
+      <QuestionWidget
+        question="What would you like to do next?"
+        answers={[
+          { label: "Continue to agent optimization", description: "Keep working with cloud agents using this validated environment.", onClick: () => onEnvConfigChoice("continue") },
+          { label: "Create pull request", description: "Add the captured environment configuration to the repository.", onClick: () => onEnvConfigChoice("create_pr") },
+        ]}
+      />
+    )
+  } else if (st.optimizationChoice == null && st.state === "AGENT_OPT_REPORT_READY" && st.optimizationReportVisible) {
+    activeQuestion = (
+      <QuestionWidget
+        question="Would you like to apply the suggested fixes?"
+        answers={[
+          { label: "Apply auto-fixes", description: "Create or update repo files for AGENTS.md, commands documentation, verify script, and PR templates.", onClick: () => onOptimizationChoice("apply") },
+          { label: "Skip auto-fixes", description: "Continue without changing the repo.", onClick: () => onOptimizationChoice("skip") },
+        ]}
+      />
+    )
+  } else if (st.state === "AGENT_OPT_COMPLETE" && !st.prCreated) {
+    activeQuestion = (
+      <QuestionWidget
+        question="What would you like to do next?"
+        answers={[
+          { label: "Create pull request", description: st.optimizationApplied ? "Open a PR with environment configuration and agent optimization changes." : "Open a PR with environment configuration changes.", onClick: onOpenPrModal },
+          { label: "Continue exploring", description: "Keep reviewing the setup without creating a pull request yet.", onClick: () => {} },
+        ]}
+      />
+    )
+  } else if (st.state === "COMPLETION_ACTIONS" && nextCard && nextCard.kind === "next_steps") {
+    activeQuestion = (
+      <QuestionWidget
+        question="What would you like to do next?"
+        answers={[
+          { label: nextCard.createPrLabel, onClick: onOpenPrModal },
+          { label: "Continue to Agent Optimization", description: nextCard.continueDisabled ? "Not available yet" : undefined, onClick: nextCard.continueDisabled ? undefined : () => {} },
+        ]}
+      />
+    )
+  }
+
+  // Reveal new messages one at a time with streaming text
+  const [revealedCount, setRevealedCount] = useState(chatMessages.length)
+  const totalCount = chatMessages.length
+
+  useEffect(() => {
+    if (revealedCount < totalCount) {
+      const msg = chatMessages[revealedCount]
+      if (msg.role === "user" || typeof msg.content !== "string") {
+        // Pause briefly before showing non-text messages
+        const delay = msg.role === "user" ? 100 : 400
+        const timer = setTimeout(() => setRevealedCount((c) => c + 1), delay)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [revealedCount, totalCount])
+
+  // Only show messages up to revealedCount + 1 (the one currently streaming)
+  const visibleMessages = chatMessages.slice(0, revealedCount + 1)
+
+  // Stream the latest new text message
+  if (revealedCount < totalCount) {
+    const streamingMsg = visibleMessages[visibleMessages.length - 1]
+    if (streamingMsg && streamingMsg.role === "assistant" && typeof streamingMsg.content === "string") {
+      const text = streamingMsg.content
+      visibleMessages[visibleMessages.length - 1] = {
+        ...streamingMsg,
+        content: <StreamText text={text} onComplete={() => setRevealedCount((c) => c + 1)} />,
+      }
+    }
+  }
+
+  const allRevealed = revealedCount >= totalCount
+  return { chatMessages: visibleMessages, activeQuestion: allRevealed ? activeQuestion : null }
+}
+
+// ============================================================================
+// Resize Handle
+// ============================================================================
+
+function ResizeHandle() {
+  const lineRef = useRef<HTMLDivElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = lineRef.current
+    const wrapper = wrapperRef.current
+    if (!el || !wrapper) return
+    const rect = wrapper.getBoundingClientRect()
+    const pct = Math.min(80, Math.max(20, ((e.clientY - rect.top) / rect.height) * 100))
+    el.style.background = `linear-gradient(to bottom, transparent ${pct - 20}%, var(--fleet-border-focused, #fff) ${pct}%, transparent ${pct + 20}%)`
+  }, [])
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="w-2 shrink-0 relative group cursor-col-resize"
+      onMouseMove={handleMouseMove}
+    >
+      <PanelResizeHandle className="absolute inset-0" />
+      <div
+        ref={lineRef}
+        className="absolute inset-y-0 left-[3px] w-px opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none"
+      />
     </div>
   )
 }
@@ -1403,13 +1746,9 @@ export default function ProjectSetupPage() {
   const [view, setView] = useState<View>("splash")
   const { state: st, onStart, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, reset, setDetailsPanelOpen, setPrModalOpen, setOptimizationPanelOpen, onCreatePr } = useSetupFlow()
 
-  const showDetailsPanel = (st.state === "REPORT_RESULT" || st.state === "COMPLETION_ACTIONS") && st.detailsPanelOpen
-  const showOptimizationPanel = (["AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state)) && st.optimizationPanelOpen
-
   const handleSplashStart = () => { setView("setup"); onStart() }
   const handleSplashCancel = () => { reset(); setView("splash") }
 
-  const [sidebarActive, setSidebarActive] = useState("tasks")
   const [sidebarPinned, setSidebarPinned] = useState(false)
 
   const SIDEBAR_TASKS = {
@@ -1418,16 +1757,22 @@ export default function ProjectSetupPage() {
     ],
   }
 
+  const [rightTab, setRightTab] = useState("progress")
+
+  const { chatMessages, activeQuestion } = useExecutionMessages({
+    st, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice,
+    onViewDetails: () => setDetailsPanelOpen(true),
+    onViewLogs: () => setDetailsPanelOpen(true),
+    onViewOptimizationReport: () => setRightTab("report"),
+    onOpenPrModal: () => setPrModalOpen(true),
+  })
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CUSTOM_CSS }} />
-      <div
-        className="h-screen flex items-stretch overflow-clip"
+      <WebAppLayout
+        className="h-screen overflow-clip items-stretch p-2"
         style={{
-          background: "var(--fleet-background-primary)",
-          color: "var(--fleet-text-primary)",
-          gap: "8px",
-          padding: "8px",
           ["--layout-padding" as string]: "16px",
           ["--layout-gap" as string]: "8px",
           ["--nav-width-collapsed" as string]: "40px",
@@ -1437,26 +1782,79 @@ export default function ProjectSetupPage() {
       >
         <WebSidebar
           alwaysExpanded={sidebarPinned}
-          active={sidebarActive}
-          onActiveChange={setSidebarActive}
           onTogglePin={() => setSidebarPinned((p) => !p)}
           taskGroups={SIDEBAR_TASKS}
-          userName="Daniel Moore"
-          userOrg="JetBrains"
         />
-        <WebAppLayout.Island main isEmpty={view === "splash"}>
-          {view === "splash" ? (
+        {view === "splash" ? (
+          <WebAppLayout.Island main isEmpty>
             <SplashScreen onStart={handleSplashStart} onCancel={handleSplashCancel} />
-          ) : (
-            <div className="flex h-full min-h-0">
-              <ExecutionView st={st} onAddSecret={onAddSecret} onSkipTests={onSkipTests} onEnvConfigChoice={onEnvConfigChoice} onOptimizationChoice={onOptimizationChoice} onViewDetails={() => setDetailsPanelOpen(true)} onViewLogs={() => setDetailsPanelOpen(true)} onViewOptimizationReport={() => setOptimizationPanelOpen(true)} onOpenPrModal={() => setPrModalOpen(true)} />
-              {showDetailsPanel && <DetailsPanel st={st} onClose={() => setDetailsPanelOpen(false)} />}
-              {showOptimizationPanel && <OptimizationReportPanel onClose={() => setOptimizationPanelOpen(false)} appliedCount={st.optimizationApplied ? 4 : 0} />}
-            </div>
-          )}
-        </WebAppLayout.Island>
+          </WebAppLayout.Island>
+        ) : (
+          <PanelGroup direction="horizontal" className="flex-1 !gap-0">
+            <Panel defaultSize={66} minSize={30}>
+              <ChatIsland
+                className="h-full"
+                messages={chatMessages}
+                contextPreview={
+                  activeQuestion ? (
+                    <div key={String(activeQuestion)} className="animate-slide-up">
+                      {activeQuestion}
+                    </div>
+                  ) : null
+                }
+                chatInputProps={{
+                  onSend: () => {},
+                  placeholder: "Ask a follow-up…",
+                  modelName: "Sonnet 4.6",
+                  permissionMode: "Ask Permission",
+                }}
+              />
+            </Panel>
+            <ResizeHandle />
+            <Panel defaultSize={34} minSize={15}>
+              <IslandWithTabs className="h-full">
+                <Tabs value={rightTab} onValueChange={setRightTab} className="flex flex-col h-full">
+                  <TabBar>
+                    <TabsList>
+                      <TabsTrigger value="progress">Progress</TabsTrigger>
+                      <TabsTrigger value="secrets">Secrets</TabsTrigger>
+                      <TabsTrigger value="changes">
+                        {(() => {
+                          const showEnv = CONFIG_READY_STATES.includes(st.state)
+                          const showOpt = st.state === "AGENT_OPT_COMPLETE" && st.optimizationApplied
+                          const files = [...(showEnv ? ENV_CONFIG_FILES : []), ...(showOpt ? OPT_FILES : [])]
+                          if (files.length === 0) return "Changes"
+                          const added = files.reduce((s, f) => s + f.added, 0)
+                          const removed = files.reduce((s, f) => s + f.removed, 0)
+                          return <>Changes <span className="text-[11px]"><span style={{ color: "var(--fleet-git-text-added)" }}>+{added}</span>{removed > 0 && <> <span style={{ color: "var(--fleet-git-text-deleted, #f87c88)" }}>-{removed}</span></>}</span></>
+                        })()}
+                      </TabsTrigger>
+                      {["AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(st.state) && st.optimizationReportVisible && (
+                        <TabsTrigger value="report">Report</TabsTrigger>
+                      )}
+                    </TabsList>
+                  </TabBar>
+                  <TabContentArea>
+                    <TabsContent value="progress" className="h-full m-0 overflow-auto">
+                      <ProgressTabContent state={st.state} />
+                    </TabsContent>
+                    <TabsContent value="secrets" className="h-full m-0 overflow-auto">
+                      <SecretsForm appSecrets={st.secrets} appSecretValues={st.secretValues} onAddSecret={onAddSecret} />
+                    </TabsContent>
+                    <TabsContent value="changes" className="h-full m-0 overflow-auto">
+                      <ChangesTabContent state={st.state} optimizationApplied={st.optimizationApplied} />
+                    </TabsContent>
+                    <TabsContent value="report" className="h-full m-0 overflow-auto">
+                      <ReportTabContent appliedCount={st.optimizationApplied ? 4 : 0} />
+                    </TabsContent>
+                  </TabContentArea>
+                </Tabs>
+              </IslandWithTabs>
+            </Panel>
+          </PanelGroup>
+        )}
         {st.prModalOpen && <PRModal st={st} onClose={() => setPrModalOpen(false)} onCreatePr={onCreatePr} />}
-      </div>
+      </WebAppLayout>
     </>
   )
 }
