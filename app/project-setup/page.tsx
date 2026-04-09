@@ -1518,7 +1518,7 @@ function useExecutionMessages({ st, onAddSecret, onSkipTests, onEnvConfigChoice,
 
   // Env config ready milestone — show only after user acts (creates PR or continues to optimization)
   if ((st.state === "ENV_CONFIG_READY" && st.prCreated) || OPT_STATES.includes(st.state)) {
-    pushAssistant(`Environment configuration is ready. This configuration reflects a validated setup where install, build, and test commands ran successfully in a clean environment.\n\n${CONFIG_SUMMARY.map(s => `${s.label}: ${s.value}`).join("\n")}`)
+    pushAssistant(<>Environment configuration is ready. This configuration reflects a validated setup where install, build, and test commands ran successfully in a clean environment.<br /><br />{CONFIG_SUMMARY.map((s, i) => <span key={s.label}>{s.label}: {s.value}{i < CONFIG_SUMMARY.length - 1 && <br />}</span>)}</>)
   }
 
   // Optimization phase messages before analysis
