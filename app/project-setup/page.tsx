@@ -1311,28 +1311,34 @@ function PRModal({ st, onClose, onCreatePr }: { st: AppState; onClose: () => voi
 
   return (
     <DialogRoot open onOpenChange={(open: boolean) => { if (!open) onClose() }}>
-      <DialogPortal>
-        <DialogOverlay />
-        <DialogContent className="max-w-[440px]">
-          <DialogHeader>
-            <DialogTitle>Create pull request</DialogTitle>
-          </DialogHeader>
-          <div className="p-4 space-y-4">
-            <div>
-              <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Title</label>
-              <TextInput value={prTitle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrTitle(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Description</label>
-              <Textarea value={prDesc} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPrDesc(e.target.value)} rows={4} resize="none" />
+      <DialogContent className="max-w-[440px]" onClose={onClose}>
+        <DialogHeader>
+          <DialogTitle>Create pull request</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Title</label>
+            <TextInput value={prTitle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrTitle(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Description</label>
+            <Textarea value={prDesc} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPrDesc(e.target.value)} rows={4} resize="none" />
+          </div>
+          <div>
+            <label className="block text-[12px] mb-2" style={{ color: "var(--fleet-text-secondary)" }}>Included in this PR</label>
+            <div className="space-y-1">
+              <Checkbox label="Environment configuration" checked disabled />
+              <Checkbox label="Validation run completed" checked disabled />
+              <Checkbox label="Test command validated" checked={st.validationLevel === "FULL"} disabled />
+              {hasOpt && <Checkbox label="Agent optimization applied" checked disabled />}
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button variant="primary" onClick={onCreatePr}>Create PR</Button>
-          </DialogFooter>
-        </DialogContent>
-      </DialogPortal>
+        </div>
+        <DialogFooter>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={onCreatePr}>Create PR</Button>
+        </DialogFooter>
+      </DialogContent>
     </DialogRoot>
   )
 }
