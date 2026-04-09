@@ -410,8 +410,7 @@ function setupReducer(state: AppState, action: SetupAction): AppState {
     case "ADD_TRANSITION_AND_CONFIG": return { ...state, state: "GENERATE_CONFIG", testOutcome: "success", validationLevel: "FULL", messages: [...state.messages, action.payload.envMsg] }
     case "SET_INSTALL_RUNNING": return { ...state, setupSteps: cloneSteps(state.setupSteps, [{ id: "install", status: "running" }]), agentThinking: true, messages: [...state.messages, getSystemMessage("Installing dependencies…")] }
     case "SKIP_TESTS": {
-      const confirmationNarrative = getSystemMessage("I've captured a reusable environment configuration. Cloud agents can now install dependencies, build the project, and run the test command to validate their work using this setup.")
-      return { ...state, messages: [...state.messages, action.payload.userMsg, action.payload.agentMsg, confirmationNarrative], state: "ENV_CONFIG_READY", testOutcome: "skipped", validationLevel: "PARTIAL", setupSteps: cloneSteps(state.setupSteps, [{ id: "test", status: "skipped" }]) }
+      return { ...state, messages: [...state.messages, action.payload.userMsg, action.payload.agentMsg], state: "COMPLETION_ANNOUNCED", testOutcome: "skipped", validationLevel: "PARTIAL", setupSteps: cloneSteps(state.setupSteps, [{ id: "test", status: "skipped" }]) }
     }
     case "CONFIG_GENERATING": {
       const last = state.messages[state.messages.length - 1]
@@ -570,6 +569,15 @@ function useSetupFlow() {
 
   const onSkipTests = useCallback(() => {
     dispatch({ type: "SKIP_TESTS", payload: { userMsg: getUserMessage("Skip validating test command"), agentMsg: getAgentMessage("", "OK. I will complete the setup without validating the test command. You can add DATABASE_URL later to validate it.") } })
+    delay(TIMINGS.configCaptureNarrativeDelayMs).then(() => {
+      dispatch({ type: "ADD_CONFIG_CAPTURE_NARRATIVE" })
+      return runCaptureConfig(dispatch)
+    }).then(() => {
+      dispatch({ type: "ADD_CONFIG_CONFIRMATION_NARRATIVE" })
+      return delay(TIMINGS.configConfirmationDelayMs)
+    }).then(() => {
+      dispatch({ type: "SHOW_ENV_CONFIG_MILESTONE" })
+    })
   }, [])
 
   const onEnvConfigChoice = useCallback((choice: "continue" | "create_pr") => {
@@ -1518,7 +1526,7 @@ function useExecutionMessages({ st, onAddSecret, onSkipTests, onEnvConfigChoice,
 
   // Env config ready milestone — show only after user acts (creates PR or continues to optimization)
   if ((st.state === "ENV_CONFIG_READY" && st.prCreated) || OPT_STATES.includes(st.state)) {
-    pushAssistant(<>Environment configuration is ready. This configuration reflects a validated setup where install, build, and test commands ran successfully in a clean environment.<br /><br />{CONFIG_SUMMARY.map((s, i) => <span key={s.label}>{s.label}: {s.value}{i < CONFIG_SUMMARY.length - 1 && <br />}</span>)}</>)
+    pushAssistant(<NarrativeBlock text={`Environment configuration is ready. This configuration reflects a validated setup where install, build, and test commands ran successfully in a clean environment.\n\n${CONFIG_SUMMARY.map(s => `${s.label}: ${s.value}`).join("\n")}`} />)
   }
 
   // Optimization phase messages before analysis
