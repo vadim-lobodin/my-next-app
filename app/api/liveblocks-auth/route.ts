@@ -1,11 +1,13 @@
 import { Liveblocks } from "@liveblocks/node";
 import { auth } from "../../../auth";
 
-const liveblocks = new Liveblocks({
-  secret: process.env.LIVEBLOCKS_SECRET_KEY!,
-});
+const secret = process.env.LIVEBLOCKS_SECRET_KEY;
+const liveblocks = secret ? new Liveblocks({ secret }) : null;
 
 export async function POST(request: Request) {
+  if (!liveblocks) {
+    return new Response(JSON.stringify({ error: "Liveblocks not configured" }), { status: 503 });
+  }
   const session = await auth();
 
   const user = session?.user;
