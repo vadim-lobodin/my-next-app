@@ -1114,7 +1114,6 @@ function ProgressTabContent({ state, prCreated, envConfigChoice }: { state: Setu
   const steps = skippedAgentOpt
     ? HIGH_LEVEL_STEPS.filter(s => s.title !== "Agent optimization")
     : HIGH_LEVEL_STEPS
-  console.log("[ProgressTabContent]", { state, prCreated, envConfigChoice, skippedAgentOpt, stepCount: steps.length })
 
   return (
     <div className="p-4 space-y-4">
@@ -1123,6 +1122,8 @@ function ProgressTabContent({ state, prCreated, envConfigChoice }: { state: Setu
         <Typography variant="default" as="p" className="mt-1" style={{ color: "var(--fleet-text-secondary)" }}>
           Preparing this repository so cloud agents can install, build, and test reliably.
         </Typography>
+        {/* DEBUG: remove after testing */}
+        <div style={{ fontSize: 10, color: "red" }}>state={state} pr={String(prCreated)} env={String(envConfigChoice)} skip={String(skippedAgentOpt)} steps={steps.length}</div>
       </div>
       <div className="space-y-0.5">
         {(() => {
