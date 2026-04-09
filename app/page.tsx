@@ -10,32 +10,6 @@ export default function Home() {
       <div className="flex flex-col gap-6 max-w-md">
         <Typography variant="header-1-semibold">Prototypes</Typography>
         <Link
-          href="/collaboration"
-          className="flex items-center gap-3 p-4 rounded-[var(--fleet-radius-lg)] transition-colors"
-          style={{ background: "var(--fleet-island-background)" }}
-        >
-          <Icon fleet="ai-chat" size="md" />
-          <div>
-            <Typography variant="default-semibold">Spec Collaboration</Typography>
-            <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>
-              Multiplayer workflow editor with Liveblocks
-            </Typography>
-          </div>
-        </Link>
-        <Link
-          href="/projects"
-          className="flex items-center gap-3 p-4 rounded-[var(--fleet-radius-lg)] transition-colors"
-          style={{ background: "var(--fleet-island-background)" }}
-        >
-          <Icon fleet="project" size="md" />
-          <div>
-            <Typography variant="default-semibold">Projects Workspace</Typography>
-            <Typography variant="default" style={{ color: "var(--fleet-text-secondary)" }}>
-              Project management with tasks and automations
-            </Typography>
-          </div>
-        </Link>
-        <Link
           href="/project-setup"
           className="flex items-center gap-3 p-4 rounded-[var(--fleet-radius-lg)] transition-colors"
           style={{ background: "var(--fleet-island-background)" }}
