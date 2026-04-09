@@ -1304,20 +1304,36 @@ function OptimizationReportPanel({ onClose, appliedCount }: { onClose: () => voi
 
 function PRModal({ st, onClose, onCreatePr }: { st: AppState; onClose: () => void; onCreatePr: () => void }) {
   const hasOpt = st.optimizationApplied
-  const title = hasOpt ? "Configure environment and apply agent optimizations" : "Configure cloud environment for agent runs"
+  const defaultTitle = hasOpt ? "Configure environment and apply agent optimizations" : "Configure cloud environment for agent runs"
+  const defaultDesc = `This change adds a reproducible cloud environment configuration for agent runs.${hasOpt ? "\nIncludes agent optimization: AGENTS.md, commands documentation, verify script, and PR templates." : ""}`
+  const [prTitle, setPrTitle] = useState(defaultTitle)
+  const [prDesc, setPrDesc] = useState(defaultDesc)
 
   return (
-    <FleetDialog
-      open
-      title="Create pull request"
-      body={`${title}\n\nThis will create a pull request with the ${hasOpt ? "environment configuration and agent optimization changes" : "environment configuration"} captured during setup.`}
-      buttons={[
-        { label: "Cancel", variant: "secondary" as const, onClick: onClose },
-        { label: "Create PR", variant: "primary" as const, onClick: onCreatePr },
-      ]}
-      showClose
-      onClose={onClose}
-    />
+    <DialogRoot open onOpenChange={(open: boolean) => { if (!open) onClose() }}>
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogContent className="max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Create pull request</DialogTitle>
+          </DialogHeader>
+          <div className="p-4 space-y-4">
+            <div>
+              <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Title</label>
+              <TextInput value={prTitle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrTitle(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-[12px] mb-1" style={{ color: "var(--fleet-text-secondary)" }}>Description</label>
+              <Textarea value={prDesc} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPrDesc(e.target.value)} rows={4} resize="none" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button variant="primary" onClick={onCreatePr}>Create PR</Button>
+          </DialogFooter>
+        </DialogContent>
+      </DialogPortal>
+    </DialogRoot>
   )
 }
 
