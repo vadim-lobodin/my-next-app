@@ -46,7 +46,7 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
         }}
       >
         <div>
-          <h1 className="text-[28px] leading-[1.1]" style={{ color: "#fff", fontFamily: "var(--font-komuna, 'KomunaVar', sans-serif)", fontWeight: 129 }}>This prototype is protected</h1>
+          <h1 className="text-[28px] leading-[1.1]" style={{ color: "#fff", fontFamily: "var(--font-komuna, 'KomunaVar', sans-serif)", fontWeight: 129, fontStyle: "normal", fontVariationSettings: "'slnt' 0, 'ital' 0" }}>This prototype is protected</h1>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); submit() }} className="space-y-3">
           <input
