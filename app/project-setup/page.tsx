@@ -1790,8 +1790,8 @@ export default function ProjectSetupPage() {
   const [sidebarPinned, setSidebarPinned] = useState(false)
 
   const SIDEBAR_TASKS = {
-    "my-project-repo": [
-      { id: "setup-1", title: "Project setup", description: "Configure cloud environment", status: "running" as const },
+    [selectedRepo || "repository"]: [
+      { id: "setup-1", title: "Environment setup", description: "Configure cloud environment", status: "running" as const },
     ],
   }
 
