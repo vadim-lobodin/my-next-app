@@ -1824,7 +1824,7 @@ export default function ProjectSetupPage() {
           taskGroups={SIDEBAR_TASKS}
         />
         {view === "welcome" ? (
-          <WebAppLayout.Island main key="welcome" className="animate-view-enter">
+          <WebAppLayout.Island main key="welcome">
             <PageTemplate
               variant="main-centered"
               title="welcome to air"
@@ -1849,7 +1849,7 @@ export default function ProjectSetupPage() {
             </PageTemplate>
           </WebAppLayout.Island>
         ) : view === "select-repo" ? (
-          <WebAppLayout.Island main key="select-repo" className="animate-view-enter">
+          <WebAppLayout.Island main key="select-repo">
             <PageTemplate
               variant="main-centered"
               title="select repository"
