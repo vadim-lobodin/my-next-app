@@ -1789,11 +1789,11 @@ export default function ProjectSetupPage() {
 
   const [sidebarPinned, setSidebarPinned] = useState(false)
 
-  const SIDEBAR_TASKS = {
+  const SIDEBAR_TASKS = view === "setup" ? {
     [selectedRepo || "repository"]: [
       { id: "setup-1", title: "Environment setup", description: "Configure cloud environment", status: "running" as const },
     ],
-  }
+  } : {}
 
   const [rightTab, setRightTab] = useState("progress")
 
