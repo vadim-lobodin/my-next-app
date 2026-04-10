@@ -39,6 +39,8 @@ import {
   List,
   ListItem,
   AirSelect,
+  PageTemplate,
+  FleetSelect,
   type ProgressSubstepStatus,
   type ChatMessage as UIChatMessage,
 } from "@/components/ui"
@@ -1753,14 +1755,26 @@ function ResizeHandle() {
 // Page Component
 // ============================================================================
 
-type View = "splash" | "setup"
+type View = "welcome" | "select-repo" | "splash" | "setup"
+
+const REPO_OPTIONS = [
+  { value: "neptune-store", label: "neptune-store" },
+  { value: "intellij-community", label: "intellij-community" },
+  { value: "fleet-plugins", label: "fleet-plugins" },
+  { value: "kotlin-web-demo", label: "kotlin-web-demo" },
+]
 
 export default function ProjectSetupPage() {
-  const [view, setView] = useState<View>("setup")
+  const [view, setView] = useState<View>("welcome")
+  const [selectedVcs, setSelectedVcs] = useState<string | null>(null)
+  const [selectedRepo, setSelectedRepo] = useState<string>("")
   const { state: st, onStart, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, reset, setDetailsPanelOpen, setPrModalOpen, setOptimizationPanelOpen, onCreatePr } = useSetupFlow()
 
   const startedRef = useRef(false)
-  useEffect(() => { if (!startedRef.current) { startedRef.current = true; onStart() } }, [])
+  const handleStartSetup = useCallback(() => {
+    if (!startedRef.current) { startedRef.current = true; onStart() }
+    setView("setup")
+  }, [onStart])
 
   const handleSplashStart = () => { setView("setup"); onStart() }
   const handleSplashCancel = () => { reset(); setView("splash") }
@@ -1801,7 +1815,59 @@ export default function ProjectSetupPage() {
           onTogglePin={() => setSidebarPinned((p) => !p)}
           taskGroups={SIDEBAR_TASKS}
         />
-        {view === "splash" ? (
+        {view === "welcome" ? (
+          <WebAppLayout.Island main>
+            <PageTemplate
+              variant="main-centered"
+              title="welcome to air"
+              subtitle="Connect a repository provider to start creating tasks"
+            >
+              <PageTemplate.Content>
+                <div className="flex gap-2 w-full mt-4">
+                  {[
+                    { id: "github", icon: "github" as const, label: "GitHub" },
+                    { id: "gitlab", icon: "gitlab" as const, label: "GitLab" },
+                    { id: "space", icon: "workspace" as const, label: "Space" },
+                  ].map((vcs) => (
+                    <SelectionCard.Root key={vcs.id} onClick={() => { setSelectedVcs(vcs.id); setView("select-repo") }} className="flex-1">
+                      <Icon fleet={vcs.icon} size="sm" />
+                      <SelectionCard.Text>
+                        <SelectionCard.Title>{vcs.label}</SelectionCard.Title>
+                      </SelectionCard.Text>
+                    </SelectionCard.Root>
+                  ))}
+                </div>
+              </PageTemplate.Content>
+            </PageTemplate>
+          </WebAppLayout.Island>
+        ) : view === "select-repo" ? (
+          <WebAppLayout.Island main>
+            <PageTemplate
+              variant="main-centered"
+              title="select repository"
+              subtitle="Air runs tasks directly on your code. Pick a repository to try your first task."
+            >
+              <PageTemplate.Content>
+                <div className="flex gap-2.5 w-full mt-4 items-start">
+                  <FleetSelect
+                    options={REPO_OPTIONS}
+                    value={selectedRepo}
+                    onValueChange={setSelectedRepo}
+                    placeholder="Select repository"
+                    className="w-[300px]"
+                  />
+                  <Button
+                    variant="primary"
+                    disabled={!selectedRepo}
+                    onClick={handleStartSetup}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </PageTemplate.Content>
+            </PageTemplate>
+          </WebAppLayout.Island>
+        ) : view === "splash" ? (
           <WebAppLayout.Island main isEmpty>
             <SplashScreen onStart={handleSplashStart} onCancel={handleSplashCancel} />
           </WebAppLayout.Island>
