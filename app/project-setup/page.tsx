@@ -630,6 +630,13 @@ const CUSTOM_CSS = `
 .animate-slide-up {
   animation: slide-up-in 0.25s ease-out forwards;
 }
+@keyframes view-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-view-enter {
+  animation: view-enter 0.4s ease-out forwards;
+}
 .recommended-card-glow {
   box-shadow: 0 0 0 1px rgb(59 130 246 / 0.3), 0 0 20px rgb(59 130 246 / 0.15);
 }
@@ -1389,8 +1396,8 @@ function SplashScreen({ onStart, onCancel }: { onStart: () => void; onCancel: ()
 
 const STAGGER_MS = 100
 
-function useExecutionMessages({ st, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, onViewDetails, onViewLogs, onViewOptimizationReport, onOpenPrModal }: {
-  st: AppState; onAddSecret: (key: "DATABASE_URL" | "NPM_TOKEN", value: string) => void; onSkipTests: () => void; onEnvConfigChoice: (choice: "continue" | "create_pr") => void; onOptimizationChoice: (choice: "apply" | "skip") => void; onViewDetails: () => void; onViewLogs: () => void; onViewOptimizationReport: () => void; onOpenPrModal: () => void
+function useExecutionMessages({ st, repoName, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, onViewDetails, onViewLogs, onViewOptimizationReport, onOpenPrModal }: {
+  st: AppState; repoName: string; onAddSecret: (key: "DATABASE_URL" | "NPM_TOKEN", value: string) => void; onSkipTests: () => void; onEnvConfigChoice: (choice: "continue" | "create_pr") => void; onOptimizationChoice: (choice: "apply" | "skip") => void; onViewDetails: () => void; onViewLogs: () => void; onViewOptimizationReport: () => void; onOpenPrModal: () => void
 }) {
   const showAnalysisBox = st.activityTimeline.length > 0 || st.state === "RUN_ANALYSIS"
   const analysisSummary = getAnalysisSummary(st)
@@ -1451,6 +1458,7 @@ function useExecutionMessages({ st, onAddSecret, onSkipTests, onEnvConfigChoice,
   const pushUser = (content: React.ReactNode) => { chatMessages.push({ id: `auto-${msgIdx++}`, role: "user", content }) }
 
   // Opening message
+  pushAssistant(`Let's configure the environment for ${repoName}!`)
   pushAssistant("I'm going to analyze this repository and prepare an environment so cloud agents can run install, build, and test commands reliably.\n\nI'll validate that those commands work in a clean environment and only ask for input if something blocks progress.")
 
   // Analysis activity box
@@ -1685,7 +1693,7 @@ function useExecutionMessages({ st, onAddSecret, onSkipTests, onEnvConfigChoice,
   }
 
   // Reveal new messages one at a time with streaming text
-  const [revealedCount, setRevealedCount] = useState(chatMessages.length)
+  const [revealedCount, setRevealedCount] = useState(0)
   const totalCount = chatMessages.length
 
   useEffect(() => {
@@ -1790,7 +1798,7 @@ export default function ProjectSetupPage() {
   const [rightTab, setRightTab] = useState("progress")
 
   const { chatMessages, activeQuestion } = useExecutionMessages({
-    st, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice,
+    st, repoName: selectedRepo || "this project", onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice,
     onViewDetails: () => setDetailsPanelOpen(true),
     onViewLogs: () => setDetailsPanelOpen(true),
     onViewOptimizationReport: () => setRightTab("report"),
@@ -1816,7 +1824,7 @@ export default function ProjectSetupPage() {
           taskGroups={SIDEBAR_TASKS}
         />
         {view === "welcome" ? (
-          <WebAppLayout.Island main>
+          <WebAppLayout.Island main key="welcome" className="animate-view-enter">
             <PageTemplate
               variant="main-centered"
               title="welcome to air"
@@ -1841,7 +1849,7 @@ export default function ProjectSetupPage() {
             </PageTemplate>
           </WebAppLayout.Island>
         ) : view === "select-repo" ? (
-          <WebAppLayout.Island main>
+          <WebAppLayout.Island main key="select-repo" className="animate-view-enter">
             <PageTemplate
               variant="main-centered"
               title="select repository"
@@ -1856,14 +1864,33 @@ export default function ProjectSetupPage() {
                     placeholder="Select repository"
                     className="w-[300px]"
                   />
-                  <Button
-                    variant="primary"
-                    disabled={!selectedRepo}
-                    onClick={handleStartSetup}
-                  >
-                    Next
-                  </Button>
                 </div>
+                {selectedRepo && (
+                  <div className="flex flex-col gap-3 w-full mt-6 animate-chat-in">
+                    <Typography variant="default" style={{ color: "var(--fleet-text-primary)" }}>
+                      No cloud environment configured yet. Set one up so agents can build and test reliably.
+                    </Typography>
+                    <div className="flex gap-2 w-full">
+                      <SelectionCard.Root onClick={handleStartSetup} className="flex-1">
+                        <Icon fleet="agent" size="sm" />
+                        <SelectionCard.Text>
+                          <SelectionCard.Title>Setup with agent</SelectionCard.Title>
+                          <SelectionCard.Description>Automated environment configuration</SelectionCard.Description>
+                        </SelectionCard.Text>
+                      </SelectionCard.Root>
+                      <SelectionCard.Root onClick={() => {}} className="flex-1">
+                        <Icon fleet="settings" size="sm" />
+                        <SelectionCard.Text>
+                          <SelectionCard.Title>Manual setup</SelectionCard.Title>
+                          <SelectionCard.Description>Configure settings yourself</SelectionCard.Description>
+                        </SelectionCard.Text>
+                      </SelectionCard.Root>
+                    </div>
+                    <div>
+                      <Button variant="secondary" onClick={handleStartSetup}>Skip</Button>
+                    </div>
+                  </div>
+                )}
               </PageTemplate.Content>
             </PageTemplate>
           </WebAppLayout.Island>
@@ -1872,7 +1899,7 @@ export default function ProjectSetupPage() {
             <SplashScreen onStart={handleSplashStart} onCancel={handleSplashCancel} />
           </WebAppLayout.Island>
         ) : (
-          <PanelGroup direction="horizontal" className="flex-1 !gap-0">
+          <PanelGroup key="setup" direction="horizontal" className="flex-1 !gap-0 animate-view-enter">
             <Panel defaultSize={66} minSize={30}>
               <ChatIsland
                 className="h-full"
