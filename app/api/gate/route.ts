@@ -3,7 +3,7 @@ import { cookies } from "next/headers"
 
 const COOKIE_NAME = "proto-gate"
 // SHA-256 of the password — never store plaintext on the server
-const PASSWORD_HASH = "a0e81f3ecd8596e79bffc063a53738fef1e31b048c52517a6937a752c62e24e0" // sha256("getsomeair")
+const PASSWORD_HASH = "67dd73b0253b0f856925a94098a226276a1ca08dba3f72a5d33e97d0adc68541" // sha256("getsomeair")
 
 async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))
