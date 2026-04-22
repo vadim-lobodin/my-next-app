@@ -229,7 +229,7 @@ export const ProgressMessage = React.forwardRef<HTMLDivElement, ProgressMessageP
 
     const iconMap = {
       done: { fleet: "checkmark", className: "shrink-0" },
-      failed: { fleet: "task-error", className: "shrink-0" },
+      failed: { fleet: "task-canceled", className: "shrink-0" },
       waiting: { fleet: "task-user-input", className: "shrink-0" },
       loader: { fleet: "progress", className: "shrink-0 animate-spin" },
     }
@@ -246,7 +246,7 @@ export const ProgressMessage = React.forwardRef<HTMLDivElement, ProgressMessageP
             "flex items-center gap-1.5 w-full py-0.5 group",
             hasSubsteps && "cursor-pointer",
           )}
-          style={{ color: isFailed ? "var(--fleet-text-dangerous)" : isWaiting ? "var(--fleet-icon-yellow, #e59408)" : "var(--fleet-text-secondary)" }}
+          style={{ color: isWaiting ? "var(--fleet-icon-yellow, #e59408)" : "var(--fleet-text-secondary)" }}
           onClick={hasSubsteps ? onToggleExpand : undefined}
         >
           {/* Status icon */}

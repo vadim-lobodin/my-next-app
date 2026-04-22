@@ -29,6 +29,7 @@ export interface AiChatInputProps {
   reasoningLevel?: "low" | "medium" | "high"
   focused?: boolean
   disabled?: boolean
+  minimal?: boolean
   className?: string
 }
 
@@ -50,6 +51,7 @@ export const AiChatInput = React.forwardRef<HTMLDivElement, AiChatInputProps>(
     reasoningLevel = "medium",
     focused: externalFocused,
     disabled = false,
+    minimal = false,
     className,
   }, ref) => {
     const [internalValue, setInternalValue] = React.useState("")
@@ -138,13 +140,14 @@ export const AiChatInput = React.forwardRef<HTMLDivElement, AiChatInputProps>(
                 className="flex-1 bg-transparent border-none outline-none resize-none min-h-[60px] max-h-[200px] text-default leading-default font-body-regular tracking-default"
                 style={{ color: 'var(--fleet-text-primary)' }}
               />
-              {/* Expand button — Figma: ghost-button padding=2px, radius=3px */}
-              <button
-                aria-label="Expand input"
-                className="flex items-center rounded-[var(--fleet-radius-xs)] shrink-0 transition-colors hover:bg-[var(--fleet-ghostButton-off-background-hovered)] bg-transparent border border-transparent p-0.5"
-              >
-                <Icon fleet="expand-all" size="sm" className="opacity-40" />
-              </button>
+              {!minimal && (
+                <button
+                  aria-label="Expand input"
+                  className="flex items-center rounded-[var(--fleet-radius-xs)] shrink-0 transition-colors hover:bg-[var(--fleet-ghostButton-off-background-hovered)] bg-transparent border border-transparent p-0.5"
+                >
+                  <Icon fleet="expand-all" size="sm" className="opacity-40" />
+                </button>
+              )}
             </div>
 
             {/* Bottom bar — Figma: _InputBottomBar, h=32px, py=4px, justify-between */}
@@ -170,8 +173,9 @@ export const AiChatInput = React.forwardRef<HTMLDivElement, AiChatInputProps>(
                   aria-label="Select model"
                   className="flex gap-0.5 items-center rounded-[var(--fleet-radius-sm)] transition-colors hover:bg-[var(--fleet-ghostButton-off-background-hovered)] py-0.5 pr-0.5 pl-1 max-w-[422px]"
                   onClick={onModelClick}
+                  disabled={minimal}
                 >
-                  <Icon fleet={modelIcon} size="sm" />
+                  {modelIcon && <Icon fleet={modelIcon} size="sm" />}
                   <Typography
                     variant="default"
                     className="whitespace-nowrap"
@@ -185,35 +189,39 @@ export const AiChatInput = React.forwardRef<HTMLDivElement, AiChatInputProps>(
 
               {/* Right toolbar */}
               <div className="flex gap-1.5 items-center">
-                {/* Permission mode */}
-                <button
-                  aria-label="Select permission mode"
-                  className="flex gap-0.5 items-center rounded-[var(--fleet-radius-sm)] transition-colors hover:bg-[var(--fleet-ghostButton-off-background-hovered)] py-0.5 pr-0.5 pl-1 max-w-[422px]"
-                  onClick={onPermissionClick}
-                >
-                  <Typography
-                    variant="default"
-                    className="whitespace-nowrap"
-                    style={{ color: 'var(--fleet-text-secondary)' }}
-                  >
-                    {permissionMode}
-                  </Typography>
-                  <Icon fleet="chevron-down" size="sm" className="opacity-40" />
-                </button>
+                {!minimal && (
+                  <>
+                    {/* Permission mode */}
+                    <button
+                      aria-label="Select permission mode"
+                      className="flex gap-0.5 items-center rounded-[var(--fleet-radius-sm)] transition-colors hover:bg-[var(--fleet-ghostButton-off-background-hovered)] py-0.5 pr-0.5 pl-1 max-w-[422px]"
+                      onClick={onPermissionClick}
+                    >
+                      <Typography
+                        variant="default"
+                        className="whitespace-nowrap"
+                        style={{ color: 'var(--fleet-text-secondary)' }}
+                      >
+                        {permissionMode}
+                      </Typography>
+                      <Icon fleet="chevron-down" size="sm" className="opacity-40" />
+                    </button>
 
-                {/* Separator — Figma: toolbar/separator/padding top/bottom=2px */}
-                <div className="flex items-stretch self-stretch py-0.5">
-                  <div className="w-px h-full" style={{ background: 'var(--fleet-separator-default)' }} />
-                </div>
+                    {/* Separator — Figma: toolbar/separator/padding top/bottom=2px */}
+                    <div className="flex items-stretch self-stretch py-0.5">
+                      <div className="w-px h-full" style={{ background: 'var(--fleet-separator-default)' }} />
+                    </div>
 
-                {/* Reasoning toggle — Figma: ghost-button padding=6px, radius=4px */}
-                <button
-                  aria-label="Toggle reasoning"
-                  className="flex items-center rounded-[var(--fleet-radius-sm)] transition-colors hover:bg-[var(--fleet-ghostButton-off-background-hovered)] bg-transparent border border-transparent p-1.5"
-                  onClick={onReasoningClick}
-                >
-                  <Icon fleet="thinking" size="sm" />
-                </button>
+                    {/* Reasoning toggle — Figma: ghost-button padding=6px, radius=4px */}
+                    <button
+                      aria-label="Toggle reasoning"
+                      className="flex items-center rounded-[var(--fleet-radius-sm)] transition-colors hover:bg-[var(--fleet-ghostButton-off-background-hovered)] bg-transparent border border-transparent p-1.5"
+                      onClick={onReasoningClick}
+                    >
+                      <Icon fleet="thinking" size="sm" />
+                    </button>
+                  </>
+                )}
 
                 {/* Send button */}
                 <Button

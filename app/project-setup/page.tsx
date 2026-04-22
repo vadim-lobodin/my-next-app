@@ -1113,10 +1113,10 @@ function DetailsPanel({ st, onClose }: { st: AppState; onClose: () => void }) {
 type HighLevelStep = { title: string; description: string; estimate: string; doneStates: SetupState[]; activeStates: SetupState[] }
 
 const HIGH_LEVEL_STEPS: HighLevelStep[] = [
-  { title: "Explore project", description: "Runtime, scripts, config", estimate: "~1 min", doneStates: ["RUN_SETUP_ATTEMPT", "BLOCKED_NPM_TOKEN", "BLOCKED_DATABASE_URL", "DATABASE_URL_ACKED", "TESTS_PASSED", "COMPLETION_ANNOUNCED", "CAPTURING_CONFIG", "CONFIG_CAPTURED", "ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"], activeStates: ["RUN_ANALYSIS"] },
-  { title: "Setup run", description: "Install, build, test", estimate: "~2–3 min", doneStates: ["TESTS_PASSED", "COMPLETION_ANNOUNCED", "CAPTURING_CONFIG", "CONFIG_CAPTURED", "ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"], activeStates: ["RUN_SETUP_ATTEMPT", "BLOCKED_NPM_TOKEN", "BLOCKED_DATABASE_URL", "DATABASE_URL_ACKED"] },
-  { title: "Capture configuration", description: "Environment config", estimate: "~30s", doneStates: ["ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"], activeStates: ["CAPTURING_CONFIG", "CONFIG_CAPTURED"] },
-  { title: "Agent optimization", description: "AGENTS.md, commands, verify", estimate: "~2 min", doneStates: ["AGENT_OPT_COMPLETE"], activeStates: ["AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING"] },
+  { title: "Explore project", description: "Detect runtime, package manager, and project structure", estimate: "~1 min", doneStates: ["RUN_SETUP_ATTEMPT", "BLOCKED_NPM_TOKEN", "BLOCKED_DATABASE_URL", "DATABASE_URL_ACKED", "TESTS_PASSED", "COMPLETION_ANNOUNCED", "CAPTURING_CONFIG", "CONFIG_CAPTURED", "ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"], activeStates: ["RUN_ANALYSIS"] },
+  { title: "Setup run", description: "Install dependencies, build, and run tests", estimate: "~2–3 min", doneStates: ["TESTS_PASSED", "COMPLETION_ANNOUNCED", "CAPTURING_CONFIG", "CONFIG_CAPTURED", "ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"], activeStates: ["RUN_SETUP_ATTEMPT", "BLOCKED_NPM_TOKEN", "BLOCKED_DATABASE_URL", "DATABASE_URL_ACKED"] },
+  { title: "Capture configuration", description: "Save environment variables and secrets", estimate: "~30s", doneStates: ["ENV_CONFIG_READY", "GENERATE_CONFIG", "REPORT_RESULT", "COMPLETION_ACTIONS", "AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"], activeStates: ["CAPTURING_CONFIG", "CONFIG_CAPTURED"] },
+  { title: "Agent optimization (optional)", description: "Generate AGENTS.md, commands, and verification flow", estimate: "~2 min", doneStates: ["AGENT_OPT_COMPLETE"], activeStates: ["AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING"] },
 ]
 
 function getStepStatus(step: HighLevelStep, state: SetupState): "done" | "in-progress" | "todo" {
@@ -1129,13 +1129,13 @@ function ProgressTabContent({ state, prCreated, envConfigChoice }: { state: Setu
   // Dynamically filter steps based on the path the user took
   const skippedAgentOpt = envConfigChoice === "create_pr" || (prCreated && !["AGENT_OPT_STARTING", "AGENT_OPT_ANALYZING", "AGENT_OPT_REPORT_READY", "AGENT_OPT_APPLYING", "AGENT_OPT_COMPLETE"].includes(state))
   const steps = skippedAgentOpt
-    ? HIGH_LEVEL_STEPS.filter(s => s.title !== "Agent optimization")
+    ? HIGH_LEVEL_STEPS.filter(s => s.title !== "Agent optimization (optional)")
     : HIGH_LEVEL_STEPS
 
   return (
     <div className="p-4 space-y-4">
       <div>
-        <Typography variant="header-3-semibold">Setup progress</Typography>
+        <Typography variant="header-3-semibold">Environment setup progress</Typography>
         <Typography variant="default" as="p" className="mt-1" style={{ color: "var(--fleet-text-secondary)" }}>
           Preparing this repository so cloud agents can install, build, and test reliably.
         </Typography>
@@ -1870,19 +1870,12 @@ export default function ProjectSetupPage() {
                     <Typography variant="default" style={{ color: "var(--fleet-text-primary)" }}>
                       No cloud environment configured yet. Set one up so agents can build and test reliably.
                     </Typography>
-                    <div className="flex gap-2 w-full">
-                      <SelectionCard.Root onClick={handleStartSetup} className="flex-1">
+                    <div className="flex gap-2 w-1/2">
+                      <SelectionCard.Root onClick={handleStartSetup}>
                         <Icon fleet="agent" size="sm" />
                         <SelectionCard.Text>
                           <SelectionCard.Title>Setup with agent</SelectionCard.Title>
                           <SelectionCard.Description>Automated environment configuration</SelectionCard.Description>
-                        </SelectionCard.Text>
-                      </SelectionCard.Root>
-                      <SelectionCard.Root onClick={() => {}} className="flex-1">
-                        <Icon fleet="settings" size="sm" />
-                        <SelectionCard.Text>
-                          <SelectionCard.Title>Manual setup</SelectionCard.Title>
-                          <SelectionCard.Description>Configure settings yourself</SelectionCard.Description>
                         </SelectionCard.Text>
                       </SelectionCard.Root>
                     </div>
@@ -1914,8 +1907,9 @@ export default function ProjectSetupPage() {
                 chatInputProps={{
                   onSend: () => {},
                   placeholder: "Ask a follow-up…",
-                  modelName: "Sonnet 4.6",
-                  permissionMode: "Ask Permission",
+                  minimal: true,
+                  modelName: "Setup agent",
+                  modelIcon: "",
                 }}
               />
             </Panel>
