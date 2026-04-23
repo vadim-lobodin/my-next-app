@@ -70,6 +70,7 @@ type SetupState =
   | "AGENT_OPT_REPORT_READY"
   | "AGENT_OPT_APPLYING"
   | "AGENT_OPT_COMPLETE"
+  | "FINALIZE_CHOICE"
 
 type StepStatus = "pending" | "running" | "success" | "fail" | "skipped"
 type ActivityLineStatus = "pending" | "running" | "success" | "blocked" | "skipped"
@@ -355,6 +356,7 @@ type SetupAction =
   | { type: "CONFIG_GENERATED"; payload: { resultCard: ChatMessage; nextMsg: ChatMessage } }
   | { type: "CONTINUE_TO_AGENT_OPTIMIZATION"; payload: { resultCard: ChatMessage; nextMsg: ChatMessage } }
   | { type: "ENV_CONFIG_CHOICE"; payload: "continue" | "create_pr" }
+  | { type: "FINALIZE_CHOICE"; payload: "create_pr" | "save_internal" }
   | { type: "RESET"; payload: AppState }
   | { type: "SET_DETAILS_PANEL_OPEN"; payload: boolean }
   | { type: "SET_PR_MODAL_OPEN"; payload: boolean }
@@ -428,8 +430,12 @@ function setupReducer(state: AppState, action: SetupAction): AppState {
     }
     case "CONTINUE_TO_AGENT_OPTIMIZATION": return { ...state, configGenerated: true, state: "COMPLETION_ACTIONS", lastRunTimestamp: Date.now(), messages: [...state.messages, action.payload.resultCard, action.payload.nextMsg] }
     case "ENV_CONFIG_CHOICE": {
-      if (action.payload === "create_pr") return { ...state, envConfigChoice: "create_pr", prModalOpen: true, messages: [...state.messages, getUserMessage("Create pull request")] }
+      if (action.payload === "create_pr") return { ...state, envConfigChoice: "create_pr", state: "FINALIZE_CHOICE" as SetupState, messages: [...state.messages, getUserMessage("Finalize the setup")] }
       return { ...state, envConfigChoice: "continue", state: "AGENT_OPT_STARTING" }
+    }
+    case "FINALIZE_CHOICE": {
+      if (action.payload === "create_pr") return { ...state, state: "COMPLETION_ACTIONS" as SetupState, prModalOpen: true, messages: [...state.messages, getUserMessage("Save to repository (create PR)")] }
+      return { ...state, state: "COMPLETION_ACTIONS" as SetupState, messages: [...state.messages, getUserMessage("Save to environment configuration"), getSystemMessage("Configuration saved to environment settings.\n\nYou can view and edit it anytime in Settings → Environment configuration.\n\nCloud agents can now use this environment to install, build, and test reliably.")] }
     }
     case "RESET": return action.payload
     case "SET_DETAILS_PANEL_OPEN": return { ...state, detailsPanelOpen: action.payload }
@@ -1396,8 +1402,8 @@ function SplashScreen({ onStart, onCancel }: { onStart: () => void; onCancel: ()
 
 const STAGGER_MS = 100
 
-function useExecutionMessages({ st, repoName, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, onViewDetails, onViewLogs, onViewOptimizationReport, onOpenPrModal }: {
-  st: AppState; repoName: string; onAddSecret: (key: "DATABASE_URL" | "NPM_TOKEN", value: string) => void; onSkipTests: () => void; onEnvConfigChoice: (choice: "continue" | "create_pr") => void; onOptimizationChoice: (choice: "apply" | "skip") => void; onViewDetails: () => void; onViewLogs: () => void; onViewOptimizationReport: () => void; onOpenPrModal: () => void
+function useExecutionMessages({ st, repoName, onAddSecret, onSkipTests, onEnvConfigChoice, onFinalizeChoice, onOptimizationChoice, onViewDetails, onViewLogs, onViewOptimizationReport, onOpenPrModal }: {
+  st: AppState; repoName: string; onAddSecret: (key: "DATABASE_URL" | "NPM_TOKEN", value: string) => void; onSkipTests: () => void; onEnvConfigChoice: (choice: "continue" | "create_pr") => void; onFinalizeChoice: (choice: "create_pr" | "save_internal") => void; onOptimizationChoice: (choice: "apply" | "skip") => void; onViewDetails: () => void; onViewLogs: () => void; onViewOptimizationReport: () => void; onOpenPrModal: () => void
 }) {
   const showAnalysisBox = st.activityTimeline.length > 0 || st.state === "RUN_ANALYSIS"
   const analysisSummary = getAnalysisSummary(st)
@@ -1655,8 +1661,18 @@ function useExecutionMessages({ st, repoName, onAddSecret, onSkipTests, onEnvCon
       <QuestionWidget
         question="What would you like to do next?"
         answers={[
-          { label: "Continue to agent optimization", description: "Keep working with cloud agents using this validated environment.", onClick: () => onEnvConfigChoice("continue") },
-          { label: "Create pull request", description: "Add the captured environment configuration to the repository.", onClick: () => onEnvConfigChoice("create_pr") },
+          { label: "Continue to agent optimization", description: "Analyze the repository and generate AGENTS.md, commands, and verification flow.", onClick: () => onEnvConfigChoice("continue") },
+          { label: "Finalize the setup", description: "Save the captured environment configuration and finish.", onClick: () => onEnvConfigChoice("create_pr") },
+        ]}
+      />
+    )
+  } else if (st.state === "FINALIZE_CHOICE") {
+    activeQuestion = (
+      <QuestionWidget
+        question="How would you like to save the configuration?"
+        answers={[
+          { label: "Save to repository (create PR)", description: "Add the environment configuration to the repository as a pull request.", onClick: () => onFinalizeChoice("create_pr") },
+          { label: "Save to environment configuration", description: "Store the configuration internally without changing the repository.", onClick: () => onFinalizeChoice("save_internal") },
         ]}
       />
     )
@@ -1798,7 +1814,7 @@ export default function ProjectSetupPage() {
   const [rightTab, setRightTab] = useState("progress")
 
   const { chatMessages, activeQuestion } = useExecutionMessages({
-    st, repoName: selectedRepo || "this project", onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice,
+    st, repoName: selectedRepo || "this project", onAddSecret, onSkipTests, onEnvConfigChoice, onFinalizeChoice: useCallback((choice: "create_pr" | "save_internal") => dispatch({ type: "FINALIZE_CHOICE", payload: choice }), []), onOptimizationChoice,
     onViewDetails: () => setDetailsPanelOpen(true),
     onViewLogs: () => setDetailsPanelOpen(true),
     onViewOptimizationReport: () => setRightTab("report"),
