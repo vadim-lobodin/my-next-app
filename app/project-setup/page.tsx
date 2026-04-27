@@ -589,6 +589,10 @@ function useSetupFlow() {
     })
   }, [])
 
+  const onFinalizeChoice = useCallback((choice: "create_pr" | "save_internal") => {
+    dispatch({ type: "FINALIZE_CHOICE", payload: choice })
+  }, [])
+
   const onEnvConfigChoice = useCallback((choice: "continue" | "create_pr") => {
     if (choice === "create_pr") { dispatch({ type: "ENV_CONFIG_CHOICE", payload: choice }) } else { dispatch({ type: "START_AGENT_OPTIMIZATION" }); runOptimizationAnalysis(dispatch) }
   }, [])
@@ -605,7 +609,7 @@ function useSetupFlow() {
   }, [])
 
   return {
-    state, onStart, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, reset,
+    state, onStart, onAddSecret, onSkipTests, onEnvConfigChoice, onFinalizeChoice, onOptimizationChoice, reset,
     setDetailsPanelOpen: (open: boolean) => dispatch({ type: "SET_DETAILS_PANEL_OPEN", payload: open }),
     setPrModalOpen: (open: boolean) => dispatch({ type: "SET_PR_MODAL_OPEN", payload: open }),
     setOptimizationPanelOpen: (open: boolean) => dispatch({ type: "SET_OPTIMIZATION_PANEL_OPEN", payload: open }),
@@ -1799,7 +1803,7 @@ export function ProjectSetupView({ chatOnly = false }: { chatOnly?: boolean } = 
   const [view, setView] = useState<View>("welcome")
   const [selectedVcs, setSelectedVcs] = useState<string | null>(null)
   const [selectedRepo, setSelectedRepo] = useState<string>("")
-  const { state: st, onStart, onAddSecret, onSkipTests, onEnvConfigChoice, onOptimizationChoice, reset, setDetailsPanelOpen, setPrModalOpen, setOptimizationPanelOpen, onCreatePr } = useSetupFlow()
+  const { state: st, onStart, onAddSecret, onSkipTests, onEnvConfigChoice, onFinalizeChoice, onOptimizationChoice, reset, setDetailsPanelOpen, setPrModalOpen, setOptimizationPanelOpen, onCreatePr } = useSetupFlow()
 
   const startedRef = useRef(false)
   const handleStartSetup = useCallback(() => {
@@ -1821,7 +1825,7 @@ export function ProjectSetupView({ chatOnly = false }: { chatOnly?: boolean } = 
   const [rightTab, setRightTab] = useState("progress")
 
   const { chatMessages, activeQuestion } = useExecutionMessages({
-    st, repoName: selectedRepo || "this project", onAddSecret, onSkipTests, onEnvConfigChoice, onFinalizeChoice: useCallback((choice: "create_pr" | "save_internal") => dispatch({ type: "FINALIZE_CHOICE", payload: choice }), []), onOptimizationChoice,
+    st, repoName: selectedRepo || "this project", onAddSecret, onSkipTests, onEnvConfigChoice, onFinalizeChoice, onOptimizationChoice,
     onViewDetails: () => setDetailsPanelOpen(true),
     onViewLogs: () => setDetailsPanelOpen(true),
     onViewOptimizationReport: () => setRightTab("report"),
