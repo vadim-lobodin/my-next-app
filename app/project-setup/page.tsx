@@ -41,6 +41,7 @@ import {
   AirSelect,
   PageTemplate,
   FleetSelect,
+  AiChatInput,
   type ProgressSubstepStatus,
   type ChatMessage as UIChatMessage,
 } from "@/components/ui"
@@ -1779,16 +1780,22 @@ function ResizeHandle() {
 // Page Component
 // ============================================================================
 
-type View = "welcome" | "select-repo" | "splash" | "setup"
+type View = "welcome" | "select-repo" | "splash" | "setup" | "new-task"
 
 const REPO_OPTIONS = [
-  { value: "neptune-store", label: "neptune-store" },
-  { value: "intellij-community", label: "intellij-community" },
-  { value: "fleet-plugins", label: "fleet-plugins" },
-  { value: "kotlin-web-demo", label: "kotlin-web-demo" },
+  { value: "_github_header", label: "GitHub", isGroupLabel: true },
+  { value: "jcp-spring-petclinic", label: "JetBrains/jcp-spring-petclinic" },
+  { value: "kotlin-desktop-to", label: "JetBrains/kotlin-desktop-to..." },
+  { value: "jcp-air", label: "JetBrains/jcp-air" },
+  { value: "jcp-agent-spawner", label: "JetBrains/jcp-agent-spawner" },
+  { value: "air-web-components", label: "JetBrains/air-web-compone..." },
 ]
 
 export default function ProjectSetupPage() {
+  return <ProjectSetupView />
+}
+
+export function ProjectSetupView({ chatOnly = false }: { chatOnly?: boolean } = {}) {
   const [view, setView] = useState<View>("welcome")
   const [selectedVcs, setSelectedVcs] = useState<string | null>(null)
   const [selectedRepo, setSelectedRepo] = useState<string>("")
@@ -1884,19 +1891,23 @@ export default function ProjectSetupPage() {
                 {selectedRepo && (
                   <div className="flex flex-col gap-3 w-full mt-6 animate-chat-in">
                     <Typography variant="default" style={{ color: "var(--fleet-text-primary)" }}>
-                      No cloud environment configured yet. Set one up so agents can build and test reliably.
+                      No cloud environment configured yet.
                     </Typography>
-                    <div className="flex gap-2 w-1/2">
-                      <SelectionCard.Root onClick={handleStartSetup}>
+                    <div className="flex gap-2 max-w-[480px]">
+                      <SelectionCard.Root onClick={handleStartSetup} className="flex-1">
                         <Icon fleet="agent" size="sm" />
                         <SelectionCard.Text>
                           <SelectionCard.Title>Setup with agent</SelectionCard.Title>
-                          <SelectionCard.Description>Automated environment configuration</SelectionCard.Description>
+                          <SelectionCard.Description>Automated configuration</SelectionCard.Description>
                         </SelectionCard.Text>
                       </SelectionCard.Root>
-                    </div>
-                    <div>
-                      <Button variant="secondary" onClick={handleStartSetup}>Skip</Button>
+                      <SelectionCard.Root onClick={() => setView("new-task")} className="flex-1">
+                        <Icon fleet="redo" size="sm" />
+                        <SelectionCard.Text>
+                          <SelectionCard.Title>Skip for now</SelectionCard.Title>
+                          <SelectionCard.Description>Configure later in settings</SelectionCard.Description>
+                        </SelectionCard.Text>
+                      </SelectionCard.Root>
                     </div>
                   </div>
                 )}
@@ -1907,6 +1918,53 @@ export default function ProjectSetupPage() {
           <WebAppLayout.Island main isEmpty>
             <SplashScreen onStart={handleSplashStart} onCancel={handleSplashCancel} />
           </WebAppLayout.Island>
+        ) : view === "new-task" ? (
+          <WebAppLayout.Island main key="new-task">
+            <PageTemplate variant="main" title="new task">
+              <PageTemplate.Content>
+                <div className="flex items-center gap-1 mt-3">
+                  <AirSelect
+                    variant="inline"
+                    value={selectedRepo || "jcp-spring-petclinic"}
+                    options={REPO_OPTIONS.filter(o => !o.isGroupLabel)}
+                  />
+                  <div className="flex items-center gap-1">
+                    <Icon fleet="vcs-branch" size="sm" className="opacity-60" />
+                    <AirSelect
+                      variant="inline"
+                      value="main"
+                      options={[{ value: "main", label: "main" }, { value: "develop", label: "develop" }]}
+                    />
+                  </div>
+                </div>
+                <AiChatInput
+                  placeholder="Describe your task"
+                  focused
+                  className="mt-4"
+                />
+              </PageTemplate.Content>
+            </PageTemplate>
+          </WebAppLayout.Island>
+        ) : chatOnly ? (
+          <ChatIsland
+            key="setup-chat-only"
+            className="flex-1 animate-view-enter"
+            messages={chatMessages}
+            contextPreview={
+              activeQuestion ? (
+                <div key={String(activeQuestion)} className="animate-slide-up">
+                  {activeQuestion}
+                </div>
+              ) : null
+            }
+            chatInputProps={{
+              onSend: () => {},
+              placeholder: "Ask a follow-up…",
+              minimal: true,
+              modelName: "Setup agent",
+              modelIcon: "",
+            }}
+          />
         ) : (
           <PanelGroup key="setup" direction="horizontal" className="flex-1 !gap-0 animate-view-enter">
             <Panel defaultSize={66} minSize={30}>
